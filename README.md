@@ -31,6 +31,74 @@ pip install filesizelib
 ## Quick Start
 
 ```python
+from filesizelib import Storage, StorageUnit
+
+# Create and convert units
+size = Storage.parse("1.5 GB")              # 1.5 GB
+print(size.convert_to_gib())                # 1.396 GIB
+print(size.convert_to_mb())                 # 1500.0 MB  
+print(size.convert_to_tb())                 # 0.0015 TB
+
+# Smart arithmetic and file operations
+file_size = Storage.get_size_from_path(".")  # Get directory size
+total = size + file_size                     # Add sizes
+print(f"Total: {total.auto_scale()}")       # Auto-scale for readability
+```
+
+## Unit Conversion Flow
+
+```mermaid
+graph TB
+    A["📄 Text Input<br/>'1.5 GB'"] --> B["🔄 Storage.parse()<br/>1.5 GB"]
+    
+    B --> C["💾 KB<br/>convert_to_kb()"]
+    B --> D["💽 MB<br/>convert_to_mb()"]  
+    B --> E["💿 TB<br/>convert_to_tb()"]
+    B --> F["🗄️ GIB<br/>convert_to_gib()"]
+    B --> G["📦 MIB<br/>convert_to_mib()"]
+    B --> H["🏗️ TIB<br/>convert_to_tib()"]
+    
+    C <--> D
+    D <--> E
+    F <--> G
+    G <--> H
+    C <--> F
+    D <--> G
+    E <--> H
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#fff3e0
+    style D fill:#fff3e0
+    style E fill:#fff3e0
+    style F fill:#e8f5e8
+    style G fill:#e8f5e8
+    style H fill:#e8f5e8
+```
+
+## Supported Units
+
+### Binary Units (Base 1024)
+- `BYTES` (1 byte)
+- `KIB` (1,024 bytes)
+- `MIB` (1,048,576 bytes)
+- `GIB`, `TIB`, `PIB`, `EIB`, `ZIB`, `YIB`
+
+### Decimal Units (Base 1000)
+- `KB` (1,000 bytes)
+- `MB` (1,000,000 bytes)
+- `GB` (1,000,000,000 bytes)
+- `TB`, `PB`, `EB`, `ZB`, `YB`
+
+### Bit Units
+- `BITS` (1/8 byte)
+- `KILOBITS`, `MEGABITS`, `GIGABITS`, `TERABITS`, `PETABITS`, `EXABITS`, `ZETTABITS`, `YOTTABITS`
+
+## Advanced Usage
+
+### Comprehensive Examples
+
+```python
 from filesizelib import Storage, StorageUnit, FileSizeLib
 
 # Create storage values
@@ -75,26 +143,6 @@ file_size = Storage.get_size_from_path("/path/to/file.txt")
 dir_size = Storage.get_size_from_path("/path/to/directory")
 print(f"Directory size: {dir_size.auto_scale()}")
 ```
-
-## Supported Units
-
-### Binary Units (Base 1024)
-- `BYTES` (1 byte)
-- `KIB` (1,024 bytes)
-- `MIB` (1,048,576 bytes)
-- `GIB`, `TIB`, `PIB`, `EIB`, `ZIB`, `YIB`
-
-### Decimal Units (Base 1000)
-- `KB` (1,000 bytes)
-- `MB` (1,000,000 bytes)
-- `GB` (1,000,000,000 bytes)
-- `TB`, `PB`, `EB`, `ZB`, `YB`
-
-### Bit Units
-- `BITS` (1/8 byte)
-- `KILOBITS`, `MEGABITS`, `GIGABITS`, `TERABITS`, `PETABITS`, `EXABITS`, `ZETTABITS`, `YOTTABITS`
-
-## Advanced Usage
 
 ### Platform-Specific Optimizations
 
