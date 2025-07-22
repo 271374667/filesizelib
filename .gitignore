@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+测试
+htmlcov
+htmlcov_convenient
+htmlcov_full
+.claude
+TEST_REPORT_CONVENIENT_CONVERSIONS.md
+.idea
+.coverage
+.python-version
+uv.lock
