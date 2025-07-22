@@ -25,6 +25,9 @@ class Storage:
         value (float): The numerical value of the storage.
         unit (StorageUnit): The unit of the storage value.
 
+    Class Attributes:
+        _decimal_precision (int): Maximum number of decimal places to display (default: 20).
+
     Examples:
         >>> storage = Storage(1, StorageUnit.KIB)
         >>> print(storage.convert_to_bytes())
@@ -37,7 +40,16 @@ class Storage:
         >>> parsed = Storage.parse("1.5 MB")
         >>> print(parsed)
         1.5 MB
+        
+        >>> # Configure decimal precision
+        >>> Storage.set_decimal_precision(10)
+        >>> small = Storage(0.000123456789012345, StorageUnit.GB)
+        >>> print(small)  # Will show up to 10 decimal places
+        0.0001234567890 GB
     """
+    
+    # Class variable for configurable decimal precision
+    _decimal_precision: int = 20
 
     def __init__(self, value: Union[int, float], unit: StorageUnit) -> None:
         """
@@ -62,6 +74,75 @@ class Storage:
         
         self.value = float(value)
         self.unit = unit
+
+    @classmethod
+    def set_decimal_precision(cls, precision: int) -> None:
+        """
+        Set the maximum number of decimal places to display in string representations.
+        
+        This affects how numbers are formatted when converting Storage objects to strings,
+        preventing scientific notation and allowing for precise decimal display.
+        
+        Args:
+            precision: Maximum number of decimal places to display. Must be >= 0.
+        
+        Raises:
+            TypeError: If precision is not an integer.
+            ValueError: If precision is negative.
+        
+        Examples:
+            >>> Storage.set_decimal_precision(5)
+            >>> small = Storage(0.000123456789, StorageUnit.GB)  
+            >>> print(small)  # Will show: 0.00012 GB
+            
+            >>> Storage.set_decimal_precision(15)
+            >>> print(small)  # Will show: 0.000123456789000 GB
+        """
+        if not isinstance(precision, int):
+            raise TypeError(f"Precision must be an integer, got {type(precision).__name__}")
+        
+        if precision < 0:
+            raise ValueError("Precision cannot be negative")
+        
+        cls._decimal_precision = precision
+    
+    @classmethod
+    def get_decimal_precision(cls) -> int:
+        """
+        Get the current maximum number of decimal places used in string representations.
+        
+        Returns:
+            int: Current decimal precision setting.
+            
+        Examples:
+            >>> Storage.set_decimal_precision(10)
+            >>> print(Storage.get_decimal_precision())
+            10
+        """
+        return cls._decimal_precision
+    
+    def _format_value(self, value: float) -> str:
+        """
+        Format a float value avoiding scientific notation and respecting decimal precision.
+        
+        Args:
+            value: The float value to format.
+            
+        Returns:
+            str: The formatted value as a string.
+        """
+        # Handle integer values
+        if value == int(value):
+            return str(int(value))
+        
+        # Format with fixed decimal places, then remove trailing zeros
+        formatted = f"{value:.{self._decimal_precision}f}"
+        
+        # Remove trailing zeros after decimal point
+        if '.' in formatted:
+            formatted = formatted.rstrip('0').rstrip('.')
+        
+        return formatted
 
     @classmethod
     def parse_from_bytes(cls, value: Union[int, float]) -> 'Storage':
@@ -121,89 +202,320 @@ class Storage:
 
     # Convenient conversion methods for binary units
     def convert_to_kib(self) -> 'Storage':
-        """Convert to kibibytes (KiB)."""
+        """
+        Convert to kibibytes (KiB) - binary unit (1024 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in KiB.
+            
+        Example:
+            >>> storage = Storage(2048, StorageUnit.BYTES)
+            >>> kib_storage = storage.convert_to_kib()
+            >>> print(kib_storage)
+            2.0 KIB
+        """
         return self.convert_to(StorageUnit.KIB)
     
     def convert_to_mib(self) -> 'Storage':
-        """Convert to mebibytes (MiB)."""
+        """
+        Convert to mebibytes (MiB) - binary unit (1024^2 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in MiB.
+            
+        Example:
+            >>> storage = Storage(1, StorageUnit.GIB)
+            >>> mib_storage = storage.convert_to_mib()
+            >>> print(mib_storage)
+            1024.0 MIB
+        """
         return self.convert_to(StorageUnit.MIB)
     
     def convert_to_gib(self) -> 'Storage':
-        """Convert to gibibytes (GiB)."""
+        """
+        Convert to gibibytes (GiB) - binary unit (1024^3 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in GiB.
+            
+        Example:
+            >>> storage = Storage(2048, StorageUnit.MIB)
+            >>> gib_storage = storage.convert_to_gib()
+            >>> print(gib_storage)
+            2.0 GIB
+        """
         return self.convert_to(StorageUnit.GIB)
     
     def convert_to_tib(self) -> 'Storage':
-        """Convert to tebibytes (TiB)."""
+        """
+        Convert to tebibytes (TiB) - binary unit (1024^4 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in TiB.
+            
+        Example:
+            >>> storage = Storage(1024, StorageUnit.GIB)
+            >>> tib_storage = storage.convert_to_tib()
+            >>> print(tib_storage)
+            1.0 TIB
+        """
         return self.convert_to(StorageUnit.TIB)
     
     def convert_to_pib(self) -> 'Storage':
-        """Convert to pebibytes (PiB)."""
+        """
+        Convert to pebibytes (PiB) - binary unit (1024^5 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in PiB.
+            
+        Example:
+            >>> storage = Storage(1024, StorageUnit.TIB)
+            >>> pib_storage = storage.convert_to_pib()
+            >>> print(pib_storage)
+            1.0 PIB
+        """
         return self.convert_to(StorageUnit.PIB)
     
     def convert_to_eib(self) -> 'Storage':
-        """Convert to exbibytes (EiB)."""
+        """
+        Convert to exbibytes (EiB) - binary unit (1024^6 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in EiB.
+            
+        Example:
+            >>> storage = Storage(1024, StorageUnit.PIB)
+            >>> eib_storage = storage.convert_to_eib()
+            >>> print(eib_storage)
+            1.0 EIB
+        """
         return self.convert_to(StorageUnit.EIB)
     
     def convert_to_zib(self) -> 'Storage':
-        """Convert to zebibytes (ZiB)."""
+        """
+        Convert to zebibytes (ZiB) - binary unit (1024^7 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in ZiB.
+            
+        Example:
+            >>> storage = Storage(1024, StorageUnit.EIB)
+            >>> zib_storage = storage.convert_to_zib()
+            >>> print(zib_storage)
+            1.0 ZIB
+        """
         return self.convert_to(StorageUnit.ZIB)
     
     def convert_to_yib(self) -> 'Storage':
-        """Convert to yobibytes (YiB)."""
+        """
+        Convert to yobibytes (YiB) - binary unit (1024^8 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in YiB.
+            
+        Example:
+            >>> storage = Storage(1024, StorageUnit.ZIB)
+            >>> yib_storage = storage.convert_to_yib()
+            >>> print(yib_storage)
+            1.0 YIB
+        """
         return self.convert_to(StorageUnit.YIB)
 
     # Convenient conversion methods for decimal units
     def convert_to_kb(self) -> 'Storage':
-        """Convert to kilobytes (KB)."""
+        """
+        Convert to kilobytes (KB) - decimal unit (1000 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in KB.
+            
+        Example:
+            >>> storage = Storage(2000, StorageUnit.BYTES)
+            >>> kb_storage = storage.convert_to_kb()
+            >>> print(kb_storage)
+            2.0 KB
+        """
         return self.convert_to(StorageUnit.KB)
     
     def convert_to_mb(self) -> 'Storage':
-        """Convert to megabytes (MB)."""
+        """
+        Convert to megabytes (MB) - decimal unit (1000^2 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in MB.
+            
+        Example:
+            >>> storage = Storage(1, StorageUnit.GB)
+            >>> mb_storage = storage.convert_to_mb()
+            >>> print(mb_storage)
+            1000.0 MB
+        """
         return self.convert_to(StorageUnit.MB)
     
     def convert_to_gb(self) -> 'Storage':
-        """Convert to gigabytes (GB)."""
+        """
+        Convert to gigabytes (GB) - decimal unit (1000^3 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in GB.
+            
+        Example:
+            >>> storage = Storage(2000, StorageUnit.MB)
+            >>> gb_storage = storage.convert_to_gb()
+            >>> print(gb_storage)
+            2.0 GB
+        """
         return self.convert_to(StorageUnit.GB)
     
     def convert_to_tb(self) -> 'Storage':
-        """Convert to terabytes (TB)."""
+        """
+        Convert to terabytes (TB) - decimal unit (1000^4 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in TB.
+            
+        Example:
+            >>> storage = Storage(1000, StorageUnit.GB)
+            >>> tb_storage = storage.convert_to_tb()
+            >>> print(tb_storage)
+            1.0 TB
+        """
         return self.convert_to(StorageUnit.TB)
     
     def convert_to_pb(self) -> 'Storage':
-        """Convert to petabytes (PB)."""
+        """
+        Convert to petabytes (PB) - decimal unit (1000^5 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in PB.
+            
+        Example:
+            >>> storage = Storage(1000, StorageUnit.TB)
+            >>> pb_storage = storage.convert_to_pb()
+            >>> print(pb_storage)
+            1.0 PB
+        """
         return self.convert_to(StorageUnit.PB)
     
     def convert_to_eb(self) -> 'Storage':
-        """Convert to exabytes (EB)."""
+        """
+        Convert to exabytes (EB) - decimal unit (1000^6 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in EB.
+            
+        Example:
+            >>> storage = Storage(1000, StorageUnit.PB)
+            >>> eb_storage = storage.convert_to_eb()
+            >>> print(eb_storage)
+            1.0 EB
+        """
         return self.convert_to(StorageUnit.EB)
     
     def convert_to_zb(self) -> 'Storage':
-        """Convert to zettabytes (ZB)."""
+        """
+        Convert to zettabytes (ZB) - decimal unit (1000^7 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in ZB.
+            
+        Example:
+            >>> storage = Storage(1000, StorageUnit.EB)
+            >>> zb_storage = storage.convert_to_zb()
+            >>> print(zb_storage)
+            1.0 ZB
+        """
         return self.convert_to(StorageUnit.ZB)
     
     def convert_to_yb(self) -> 'Storage':
-        """Convert to yottabytes (YB)."""
+        """
+        Convert to yottabytes (YB) - decimal unit (1000^8 bytes).
+        
+        Returns:
+            Storage: New Storage object with value in YB.
+            
+        Example:
+            >>> storage = Storage(1000, StorageUnit.ZB)
+            >>> yb_storage = storage.convert_to_yb()
+            >>> print(yb_storage)
+            1.0 YB
+        """
         return self.convert_to(StorageUnit.YB)
 
     # Convenient conversion methods for bit units
     def convert_to_bits(self) -> 'Storage':
-        """Convert to bits."""
+        """
+        Convert to bits - smallest unit (1/8 byte).
+        
+        Returns:
+            Storage: New Storage object with value in bits.
+            
+        Example:
+            >>> storage = Storage(1, StorageUnit.BYTES)
+            >>> bits_storage = storage.convert_to_bits()
+            >>> print(bits_storage)
+            8.0 BITS
+        """
         return self.convert_to(StorageUnit.BITS)
     
     def convert_to_kilobits(self) -> 'Storage':
-        """Convert to kilobits."""
+        """
+        Convert to kilobits - decimal bit unit (1000 bits).
+        
+        Returns:
+            Storage: New Storage object with value in kilobits.
+            
+        Example:
+            >>> storage = Storage(1, StorageUnit.KB)
+            >>> kbits_storage = storage.convert_to_kilobits()
+            >>> print(kbits_storage)
+            8.0 KILOBITS
+        """
         return self.convert_to(StorageUnit.KILOBITS)
     
     def convert_to_megabits(self) -> 'Storage':
-        """Convert to megabits."""
+        """
+        Convert to megabits - decimal bit unit (1000^2 bits).
+        
+        Returns:
+            Storage: New Storage object with value in megabits.
+            
+        Example:
+            >>> storage = Storage(1, StorageUnit.MB)
+            >>> mbits_storage = storage.convert_to_megabits()
+            >>> print(mbits_storage)
+            8.0 MEGABITS
+        """
         return self.convert_to(StorageUnit.MEGABITS)
     
     def convert_to_gigabits(self) -> 'Storage':
-        """Convert to gigabits."""
+        """
+        Convert to gigabits - decimal bit unit (1000^3 bits).
+        
+        Returns:
+            Storage: New Storage object with value in gigabits.
+            
+        Example:
+            >>> storage = Storage(1, StorageUnit.GB)
+            >>> gbits_storage = storage.convert_to_gigabits()
+            >>> print(gbits_storage)
+            8.0 GIGABITS
+        """
         return self.convert_to(StorageUnit.GIGABITS)
     
     def convert_to_terabits(self) -> 'Storage':
-        """Convert to terabits."""
+        """
+        Convert to terabits - decimal bit unit (1000^4 bits).
+        
+        Returns:
+            Storage: New Storage object with value in terabits.
+            
+        Example:
+            >>> storage = Storage(1, StorageUnit.TB)
+            >>> tbits_storage = storage.convert_to_terabits()
+            >>> print(tbits_storage)
+            8.0 TERABITS
+        """
         return self.convert_to(StorageUnit.TERABITS)
 
     @classmethod
@@ -291,7 +603,9 @@ class Storage:
             other: The other Storage instance.
 
         Returns:
-            Storage: A new Storage instance with the summed value in bytes.
+            Storage: A new Storage instance with the summed value. If both operands
+            have the same unit, the result preserves that unit. Otherwise, the result
+            is in bytes.
 
         Examples:
             >>> s1 = Storage(1, StorageUnit.KIB)
@@ -299,10 +613,22 @@ class Storage:
             >>> total = s1 + s2
             >>> print(total)
             1536.0 BYTES
+            
+            >>> s3 = Storage(1, StorageUnit.GB)
+            >>> s4 = Storage(2, StorageUnit.GB)
+            >>> same_unit_total = s3 + s4
+            >>> print(same_unit_total)
+            3 GB
         """
         if not isinstance(other, Storage):
             return NotImplemented
         
+        # If both operands have the same unit, preserve that unit
+        if self.unit == other.unit:
+            total_value = self.value + other.value
+            return Storage(total_value, self.unit)
+        
+        # Different units: convert to bytes
         total_bytes = self.convert_to_bytes() + other.convert_to_bytes()
         return Storage.parse_from_bytes(total_bytes)
 
@@ -314,7 +640,9 @@ class Storage:
             other: The other Storage instance.
 
         Returns:
-            Storage: A new Storage instance with the difference in bytes.
+            Storage: A new Storage instance with the difference. If both operands
+            have the same unit, the result preserves that unit. Otherwise, the result
+            is in bytes.
 
         Raises:
             ValueError: If the result would be negative.
@@ -325,10 +653,24 @@ class Storage:
             >>> diff = s1 - s2
             >>> print(diff)
             1536.0 BYTES
+            
+            >>> s3 = Storage(5, StorageUnit.GB)
+            >>> s4 = Storage(2, StorageUnit.GB)
+            >>> same_unit_diff = s3 - s4
+            >>> print(same_unit_diff)
+            3 GB
         """
         if not isinstance(other, Storage):
             return NotImplemented
         
+        # If both operands have the same unit, preserve that unit
+        if self.unit == other.unit:
+            result_value = self.value - other.value
+            if result_value < 0:
+                raise ValueError("Storage subtraction result cannot be negative")
+            return Storage(result_value, self.unit)
+        
+        # Different units: convert to bytes
         result_bytes = self.convert_to_bytes() - other.convert_to_bytes()
         if result_bytes < 0:
             raise ValueError("Storage subtraction result cannot be negative")
@@ -563,6 +905,9 @@ class Storage:
     def __str__(self) -> str:
         """
         Return a human-readable string representation.
+        
+        Uses the configured decimal precision to avoid scientific notation
+        and provide consistent decimal formatting.
 
         Returns:
             str: A string representation of the storage.
@@ -571,13 +916,12 @@ class Storage:
             >>> storage = Storage(1.5, StorageUnit.MB)
             >>> print(str(storage))
             1.5 MB
+            
+            >>> small = Storage(9.872019291e-05, StorageUnit.GIB)
+            >>> print(str(small))  # No scientific notation
+            0.00009872019291 GIB
         """
-        # Format the value to remove unnecessary decimal places
-        if self.value == int(self.value):
-            value_str = str(int(self.value))
-        else:
-            value_str = f"{self.value:.10g}"  # Remove trailing zeros
-        
+        value_str = self._format_value(self.value)
         return f"{value_str} {self.unit.name}"
 
     def __repr__(self) -> str:
@@ -597,6 +941,9 @@ class Storage:
     def __format__(self, format_spec: str) -> str:
         """
         Format the storage value according to the format specification.
+        
+        If no format specification is provided, uses the configured decimal
+        precision to avoid scientific notation.
 
         Args:
             format_spec: The format specification string.
@@ -608,11 +955,17 @@ class Storage:
             >>> storage = Storage(1234.5, StorageUnit.BYTES)
             >>> print(f"{storage:.2f}")
             1234.50 BYTES
+            
+            >>> small = Storage(0.000123456789, StorageUnit.GB)
+            >>> print(f"{small}")  # Uses configured precision
+            0.000123456789 GB
         """
         if format_spec:
+            # Use the provided format specification
             formatted_value = format(self.value, format_spec)
         else:
-            formatted_value = str(self.value)
+            # Use our custom formatting to avoid scientific notation
+            formatted_value = self._format_value(self.value)
         
         return f"{formatted_value} {self.unit.name}"
 
@@ -676,7 +1029,7 @@ class Storage:
         return Storage.parse_from_bytes(size)
 
     @staticmethod
-    def get_platform_storage():
+    def get_platform_storage() -> 'Storage':
         """
         Get the appropriate platform-specific storage instance.
 

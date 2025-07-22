@@ -1,4 +1,4 @@
-# Bytesize
+# ByteUnit
 
 A unified storage unit library for Python with cross-platform file size support.
 
@@ -19,17 +19,21 @@ A unified storage unit library for Python with cross-platform file size support.
 ## Installation
 
 ```bash
-pip install bytesize
+pip install byteunit
 ```
 
 ## Quick Start
 
 ```python
-from bytesize import Storage, StorageUnit
+from byteunit import Storage, StorageUnit, ByteUnit
 
 # Create storage values
 storage1 = Storage(1, StorageUnit.KIB)
 storage2 = Storage(512, StorageUnit.BYTES)
+
+# ByteUnit is an alias for Storage - both are functionally identical
+byte_unit = ByteUnit(1024, StorageUnit.BYTES)
+print(storage1 == byte_unit)  # True
 
 # Arithmetic operations
 total = storage1 + storage2  # 1536.0 BYTES
@@ -84,7 +88,7 @@ print(f"Directory size: {dir_size.auto_scale()}")
 ### Platform-Specific Optimizations
 
 ```python
-from bytesize import Storage
+from byteunit import Storage
 
 # Automatically detect and use platform-specific optimizations
 platform_storage = Storage.get_platform_storage()
@@ -127,7 +131,7 @@ Storage.parse("1 k")         # Single letter
 ### Error Handling
 
 ```python
-from bytesize import Storage, StorageUnit
+from byteunit import Storage, StorageUnit, ByteUnit
 
 # Invalid values raise appropriate exceptions
 try:
@@ -152,7 +156,7 @@ except ZeroDivisionError as e:
 ### Download Time Calculator
 
 ```python
-from bytesize import Storage, StorageUnit
+from byteunit import Storage, StorageUnit, ByteUnit
 
 # File sizes
 movie = Storage.parse("1.4 GB")
@@ -208,11 +212,11 @@ python demo.py
 pip install -e ".[dev]"
 
 # Run type checking
-mypy bytesize/
+mypy byteunit/
 
 # Run code formatting
-black bytesize/
-isort bytesize/
+black byteunit/
+isort byteunit/
 
 # Build package
 python -m build

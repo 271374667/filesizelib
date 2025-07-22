@@ -1,5 +1,5 @@
 [project]
-name = "bytesize"
+name = "byteunit"
 version = "0.1.0"
 description = "A unified storage unit library for Python with cross-platform file size support"
 readme = "README.md"
@@ -38,11 +38,11 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/bytesize-dev/bytesize"
-Documentation = "https://bytesize.readthedocs.io"
-Repository = "https://github.com/bytesize-dev/bytesize.git"
-Issues = "https://github.com/bytesize-dev/bytesize/issues"
-Changelog = "https://github.com/bytesize-dev/bytesize/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/byteunit-dev/byteunit"
+Documentation = "https://byteunit.readthedocs.io"
+Repository = "https://github.com/byteunit-dev/byteunit.git"
+Issues = "https://github.com/byteunit-dev/byteunit/issues"
+Changelog = "https://github.com/byteunit-dev/byteunit/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
@@ -68,6 +68,7 @@ test = [
 dev = [
     "hatchling>=1.27.0",
     "mkdocs-material>=9.6.15",
+    "mkdocstrings[python]>=0.29.1",
     "pytest>=8.4.1",
 ]
 
@@ -76,10 +77,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "bytesize/__init__.py"
+path = "byteunit/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["bytesize"]
+packages = ["byteunit"]
 
 [tool.black]
 line-length = 88
@@ -127,7 +128,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["bytesize"]
+source = ["byteunit"]
 omit = ["*/tests/*"]
 
 [tool.coverage.report]

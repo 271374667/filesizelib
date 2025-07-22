@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Generator, List, Tuple, Any
 import pytest
 
-from bytesize import Storage, StorageUnit
-from bytesize.platform_storage import WindowsStorage, LinuxStorage, MacStorage
+from byteunit import Storage, StorageUnit
+from byteunit.platform_storage import WindowsStorage, LinuxStorage, MacStorage
 
 
 # Platform detection fixture

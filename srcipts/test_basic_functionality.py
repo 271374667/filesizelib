@@ -12,10 +12,10 @@ import sys
 import os
 
 # Add the bytesize package to the path
-sys.path.insert(0, str(Path(__file__).parent / "bytesize"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bytesize import Storage, StorageUnit
-from bytesize.platform_storage import WindowsStorage, LinuxStorage, MacStorage
+from byteunit import Storage, StorageUnit, ByteUnit
+from byteunit.platform_storage import WindowsStorage, LinuxStorage, MacStorage
 
 
 def test_basic_storage_operations():
@@ -44,6 +44,13 @@ def test_basic_storage_operations():
     assert converted.value == 1024.0
     assert converted.unit == StorageUnit.BYTES
     print("✓ Unit conversion works")
+    
+    # Test ByteUnit alias
+    byte_unit = ByteUnit(1, StorageUnit.KIB)
+    assert byte_unit.value == storage.value
+    assert byte_unit.unit == storage.unit
+    assert ByteUnit is Storage  # Same class
+    print("✓ ByteUnit alias works")
 
 
 def test_arithmetic_operations():
