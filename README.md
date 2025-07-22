@@ -1,10 +1,15 @@
-# ByteUnit
 
-A unified storage unit library for Python with cross-platform file size support.
+![byteunit](./README.assets/byteunit.svg)
+
+<div align="center">
+
+# byteunit
 
 [![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Type Checked](https://img.shields.io/badge/type--checked-mypy-blue.svg)](https://mypy.readthedocs.io/)
+
+</div>
 
 ## Features
 
@@ -111,6 +116,8 @@ print(f"Optimizations: {info.get('api_optimization', 'none')}")
 The `parse()` method supports various input formats:
 
 ```python
+from byteunit import Storage, StorageUnit
+
 # Case insensitive
 Storage.parse("1.5 mb")      # Works
 Storage.parse("1.5 MB")      # Works
@@ -137,7 +144,7 @@ Storage.parse("1 k")         # Single letter
 ### Error Handling
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from byteunit import Storage, StorageUnit
 
 # Invalid values raise appropriate exceptions
 try:
@@ -161,16 +168,18 @@ except ZeroDivisionError as e:
 
 ### Download Time Calculator
 
+ByteUnit is the same thing as Storage, so you can use either interchangeably.
+
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from byteunit import ByteUnit
 
 # File sizes
-movie = Storage.parse("1.4 GB")
-song = Storage.parse("4.5 MB")
+movie = ByteUnit.parse("1.4 GB")
+song = ByteUnit.parse("4.5 MB")
 
 # Network speeds (in bits per second)
-broadband = Storage.parse("50 Megabits")  # 50 Mbps
-fiber = Storage.parse("1 Gigabit")        # 1 Gbps
+broadband = ByteUnit.parse("50 Megabits")  # 50 Mbps
+fiber = ByteUnit.parse("1 Gigabit")        # 1 Gbps
 
 # Calculate download times
 movie_time_broadband = movie / broadband  # seconds
@@ -184,17 +193,19 @@ print(f"  Fiber (1 Gbps): {movie_time_fiber:.1f} seconds")
 ### Storage Capacity Planning
 
 ```python
+from byteunit import ByteUnit
+
 # Calculate total storage needs
-photos = Storage.parse("2.8 MiB") * 2000      # 2000 photos
-music = Storage.parse("4.5 MB") * 500         # 500 songs
-videos = Storage.parse("1.2 GB") * 50         # 50 videos
-documents = Storage.parse("250 KB") * 1000    # 1000 documents
+photos = ByteUnit.parse("2.8 MiB") * 2000      # 2000 photos
+music = ByteUnit.parse("4.5 MB") * 500         # 500 songs
+videos = ByteUnit.parse("1.2 GB") * 50         # 50 videos
+documents = ByteUnit.parse("250 KB") * 1000    # 1000 documents
 
 total_needed = photos + music + videos + documents
 print(f"Total storage needed: {total_needed.auto_scale()}")
 
 # Available storage
-available = Storage.parse("500 GB")
+available = ByteUnit.parse("500 GB")
 remaining = available - total_needed
 print(f"Remaining space: {remaining.auto_scale()}")
 ```
@@ -206,43 +217,17 @@ print(f"Remaining space: {remaining.auto_scale()}")
 ```bash
 # Run basic functionality tests
 python test_basic_functionality.py
-
-# Run demonstration
-python demo.py
 ```
 
 ### Building and Installation
 
+please install uv first
+
 ```bash
 # Install development dependencies
-pip install -e ".[dev]"
-
-# Run type checking
-mypy byteunit/
-
-# Run code formatting
-black byteunit/
-isort byteunit/
-
-# Build package
-python -m build
+uv sync
 ```
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Changelog
-
-### 0.1.0 (Initial Release)
-- Complete storage unit enumeration system
-- Full arithmetic and comparison operations
-- Flexible string parsing with multiple format support
-- Cross-platform file size operations using pathlib
-- Platform-specific optimizations for Windows, Linux, and macOS
-- Comprehensive type annotations and documentation
-- Zero external dependencies
