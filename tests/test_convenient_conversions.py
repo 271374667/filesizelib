@@ -1,12 +1,12 @@
 """
-Tests for convenient conversion methods in the bytesize library.
+Tests for convenient conversion methods in the filesizelib library.
 
 This module tests the new convenient conversion methods (convert_to_kib, convert_to_mb, etc.)
 that provide shortcuts for common unit conversions.
 """
 
 import pytest
-from bytesize import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit
 
 
 class TestBinaryConversionMethods:

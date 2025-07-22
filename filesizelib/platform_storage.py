@@ -145,7 +145,7 @@ class WindowsStorage(PlatformStorageBase):
             ], capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0 and result.stdout.strip():
-                size = int(result.stdout.strip())
+                size = float(result.stdout.strip())
                 return Storage.parse_from_bytes(size)
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, ValueError, FileNotFoundError):
             pass

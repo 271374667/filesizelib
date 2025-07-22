@@ -1,6 +1,6 @@
 [project]
 name = "filesizelib"
-version = "0.6.6"
+version = "0.6.14"
 description = "A unified storage unit library for Python with cross-platform file size support"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -75,10 +75,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "byteunit/__init__.py"
+path = "filesizelib/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["byteunit"]
+packages = ["filesizelib"]
 
 [tool.black]
 line-length = 88
@@ -126,7 +126,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["byteunit"]
+source = ["filesizelib"]
 omit = ["*/tests/*"]
 
 [tool.coverage.report]

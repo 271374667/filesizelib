@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Basic functionality test for the bytesize library.
+Basic functionality test for the filesizelib library.
 
-This script tests the core functionality of the bytesize library
+This script tests the core functionality of the filesizelib library
 to ensure everything works correctly across different platforms.
 """
 
@@ -11,11 +11,11 @@ from pathlib import Path
 import sys
 import os
 
-# Add the bytesize package to the path
+# Add the filesizelib package to the path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from filesizelib import Storage, StorageUnit, FileSizeLib
-from byteunit.platform_storage import WindowsStorage, LinuxStorage, MacStorage
+from filesizelib.platform_storage import WindowsStorage, LinuxStorage, MacStorage
 
 
 def test_basic_storage_operations():

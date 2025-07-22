@@ -8,7 +8,7 @@ unit values, aliases, classifications, and utility methods.
 import pytest
 from typing import Set
 
-from bytesize.storage_unit import StorageUnit
+from filesizelib.storage_unit import StorageUnit
 
 
 class TestStorageUnitValues:

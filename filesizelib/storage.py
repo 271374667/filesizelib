@@ -5,6 +5,7 @@ This module contains the main Storage class that provides storage unit
 conversion, arithmetic operations, and parsing functionality.
 """
 
+import math
 import re
 import platform
 from pathlib import Path
@@ -71,6 +72,9 @@ class Storage:
         
         if value < 0:
             raise ValueError("Storage value cannot be negative")
+        
+        if not math.isfinite(value):
+            raise ValueError("Storage value cannot be infinity or NaN")
         
         self.value = float(value)
         self.unit = unit

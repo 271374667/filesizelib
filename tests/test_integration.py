@@ -1,5 +1,5 @@
 """
-Integration tests for the bytesize library.
+Integration tests for the filesizelib library.
 
 This module tests the integration between different components and
 provides comprehensive data-driven tests for real-world scenarios.
@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import List, Tuple, Any
 
-from bytesize import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit
 
 
 class TestPackageIntegration:
@@ -20,8 +20,8 @@ class TestPackageIntegration:
     def test_package_imports(self):
         """Test that all expected components can be imported."""
         # Test main imports
-        from bytesize import Storage, StorageUnit
-        from bytesize.platform_storage import WindowsStorage, LinuxStorage, MacStorage
+        from filesizelib import Storage, StorageUnit
+        from filesizelib.platform_storage import WindowsStorage, LinuxStorage, MacStorage
         
         # Verify classes exist and are callable
         assert callable(Storage)

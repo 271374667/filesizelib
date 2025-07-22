@@ -12,8 +12,8 @@ import subprocess
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from bytesize import Storage, StorageUnit
-from bytesize.platform_storage import (
+from filesizelib import Storage, StorageUnit
+from filesizelib.platform_storage import (
     PlatformStorageBase,
     WindowsStorage,
     LinuxStorage,

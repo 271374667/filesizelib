@@ -161,9 +161,9 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/your-username/byteunit
+      link: https://github.com/your-username/filesizelib
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/byteunit/
+      link: https://pypi.org/project/filesizelib/
   analytics:
     provider: google
     property: !ENV GOOGLE_ANALYTICS_KEY

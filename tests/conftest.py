@@ -1,8 +1,8 @@
 """
-Shared test configuration and fixtures for the bytesize test suite.
+Shared test configuration and fixtures for the filesizelib test suite.
 
 This module provides common fixtures, test utilities, and configuration
-for all bytesize tests.
+for all filesizelib tests.
 """
 
 import platform
@@ -13,7 +13,7 @@ from typing import Generator, List, Tuple, Any
 import pytest
 
 from filesizelib import Storage, StorageUnit
-from byteunit.platform_storage import WindowsStorage, LinuxStorage, MacStorage
+from filesizelib.platform_storage import WindowsStorage, LinuxStorage, MacStorage
 
 
 # Platform detection fixture
