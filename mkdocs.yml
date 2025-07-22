@@ -1,11 +1,11 @@
-site_name: ByteUnit
+site_name: FileSizeLib
 site_description: A unified storage unit library for Python with cross-platform file size support
-site_author: ByteUnit Team
-site_url: https://byteunit.readthedocs.io
+site_author: PythonImporter
+site_url: https://github.io/271374667/filesizelib
 
 # Repository
-repo_name: byteunit
-repo_url: https://github.com/your-username/byteunit
+repo_name: filesizelib
+repo_url: https://github.com/271374667/filesizelib
 edit_uri: ""
 
 # Copyright

@@ -41,7 +41,7 @@ from .platform_storage import WindowsStorage, LinuxStorage, MacStorage
 # Both classes are functionally identical
 FileSizeLib = Storage
 
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 __author__ = "PythonImporter"
 __all__ = [
     "Storage",

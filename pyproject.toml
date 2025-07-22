@@ -1,6 +1,6 @@
 [project]
 name = "filesizelib"
-version = "0.6.5"
+version = "0.6.6"
 description = "A unified storage unit library for Python with cross-platform file size support"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -38,11 +38,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/byteunit-dev/byteunit"
-Documentation = "https://byteunit.readthedocs.io"
-Repository = "https://github.com/byteunit-dev/byteunit.git"
-Issues = "https://github.com/byteunit-dev/byteunit/issues"
-Changelog = "https://github.com/byteunit-dev/byteunit/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/271374667/filesizelib"
+Documentation = "https://271374667.github.io/filesizelib/"
+Repository = "https://github.com/271374667/filesizelib.git"
 
 [project.optional-dependencies]
 dev = [
