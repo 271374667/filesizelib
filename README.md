@@ -1,9 +1,9 @@
 
-![byteunit](./README.assets/byteunit.svg)
+![filesizelib](https://socialify.git.ci/271374667/filesizelib/image?custom_description=A+unified+storage+unit+library+for+Python+with+cross-platform+file+size+support.&description=1&font=Inter&language=1&name=1&pattern=Plus&theme=Light)
 
 <div align="center">
 
-# byteunit
+# filesizelib
 
 [![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -25,21 +25,21 @@
 ## Installation
 
 ```bash
-pip install byteunit
+pip install filesizelib
 ```
 
 ## Quick Start
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 # Create storage values
 storage1 = Storage(1, StorageUnit.KIB)
 storage2 = Storage(512, StorageUnit.BYTES)
 
-# ByteUnit is an alias for Storage - both are functionally identical
-byte_unit = ByteUnit(1024, StorageUnit.BYTES)
-print(storage1 == byte_unit)  # True
+# FileSizeLib is an alias for Storage - both are functionally identical
+filesize = FileSizeLib(1024, StorageUnit.BYTES)
+print(storage1 == filesize)  # True
 
 # Smart arithmetic - same units preserve unit, mixed units convert to bytes
 same_unit_total = Storage(1, StorageUnit.GB) + Storage(2, StorageUnit.GB)  # 3 GB (preserved!)
@@ -99,7 +99,7 @@ print(f"Directory size: {dir_size.auto_scale()}")
 ### Platform-Specific Optimizations
 
 ```python
-from byteunit import Storage
+from filesizelib import Storage
 
 # Automatically detect and use platform-specific optimizations
 platform_storage = Storage.get_platform_storage()
@@ -116,7 +116,7 @@ print(f"Optimizations: {info.get('api_optimization', 'none')}")
 The `parse()` method supports various input formats:
 
 ```python
-from byteunit import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit
 
 # Case insensitive
 Storage.parse("1.5 mb")      # Works
@@ -144,7 +144,7 @@ Storage.parse("1 k")         # Single letter
 ### Error Handling
 
 ```python
-from byteunit import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit
 
 # Invalid values raise appropriate exceptions
 try:
@@ -168,18 +168,18 @@ except ZeroDivisionError as e:
 
 ### Download Time Calculator
 
-ByteUnit is the same thing as Storage, so you can use either interchangeably.
+FileSizeLib is the same thing as Storage, so you can use either interchangeably.
 
 ```python
-from byteunit import ByteUnit
+from filesizelib import FileSizeLib
 
 # File sizes
-movie = ByteUnit.parse("1.4 GB")
-song = ByteUnit.parse("4.5 MB")
+movie = FileSizeLib.parse("1.4 GB")
+song = FileSizeLib.parse("4.5 MB")
 
 # Network speeds (in bits per second)
-broadband = ByteUnit.parse("50 Megabits")  # 50 Mbps
-fiber = ByteUnit.parse("1 Gigabit")        # 1 Gbps
+broadband = FileSizeLib.parse("50 Megabits")  # 50 Mbps
+fiber = FileSizeLib.parse("1 Gigabit")        # 1 Gbps
 
 # Calculate download times
 movie_time_broadband = movie / broadband  # seconds
@@ -193,19 +193,19 @@ print(f"  Fiber (1 Gbps): {movie_time_fiber:.1f} seconds")
 ### Storage Capacity Planning
 
 ```python
-from byteunit import ByteUnit
+from filesizelib import FileSizeLib
 
 # Calculate total storage needs
-photos = ByteUnit.parse("2.8 MiB") * 2000      # 2000 photos
-music = ByteUnit.parse("4.5 MB") * 500         # 500 songs
-videos = ByteUnit.parse("1.2 GB") * 50         # 50 videos
-documents = ByteUnit.parse("250 KB") * 1000    # 1000 documents
+photos = FileSizeLib.parse("2.8 MiB") * 2000      # 2000 photos
+music = FileSizeLib.parse("4.5 MB") * 500         # 500 songs
+videos = FileSizeLib.parse("1.2 GB") * 50         # 50 videos
+documents = FileSizeLib.parse("250 KB") * 1000    # 1000 documents
 
 total_needed = photos + music + videos + documents
 print(f"Total storage needed: {total_needed.auto_scale()}")
 
 # Available storage
-available = ByteUnit.parse("500 GB")
+available = FileSizeLib.parse("500 GB")
 remaining = available - total_needed
 print(f"Remaining space: {remaining.auto_scale()}")
 ```

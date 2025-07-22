@@ -1,5 +1,5 @@
 """
-ByteUnit: A unified storage unit library for Python.
+FileSizeLib: A unified storage unit library for Python.
 
 This library provides a simple, unified interface for working with storage units
 such as bytes, kilobytes, megabytes, etc. It supports arithmetic operations,
@@ -15,16 +15,16 @@ Key Features:
 - Platform-specific optimizations
 
 Example:
-    >>> from byteunit import Storage, StorageUnit, ByteUnit
+    >>> from filesizelib import Storage, StorageUnit, FileSizeLib
     >>> size = Storage(1, StorageUnit.KIB)
     >>> print(size.convert_to_bytes())
     1024
     >>> parsed = Storage.parse("1.5 MB")
     >>> print(parsed)
     1.5 MB
-    >>> # ByteUnit is an alias for Storage
-    >>> byte_unit = ByteUnit(1024, StorageUnit.BYTES)
-    >>> print(byte_unit.convert_to_kib())
+    >>> # FileSizeLib is an alias for Storage
+    >>> filesize = FileSizeLib(1024, StorageUnit.BYTES)
+    >>> print(filesize.convert_to_kib())
     1.0 KIB
     >>> # Configure decimal precision
     >>> Storage.set_decimal_precision(10)
@@ -37,16 +37,16 @@ from .storage_unit import StorageUnit
 from .storage import Storage
 from .platform_storage import WindowsStorage, LinuxStorage, MacStorage
 
-# ByteUnit is an alias for Storage to match the package name
+# FileSizeLib is an alias for Storage to match the package name
 # Both classes are functionally identical
-ByteUnit = Storage
+FileSizeLib = Storage
 
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 __author__ = "PythonImporter"
 __all__ = [
     "Storage",
     "StorageUnit", 
-    "ByteUnit",  # Alias for Storage
+    "FileSizeLib",  # Alias for Storage
     "WindowsStorage",
     "LinuxStorage", 
     "MacStorage"

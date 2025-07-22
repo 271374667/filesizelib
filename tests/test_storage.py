@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 from typing import Any, List, Tuple, Union
 
-from byteunit import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit
 
 
 class TestStorageInitialization:

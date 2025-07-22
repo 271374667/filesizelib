@@ -19,3 +19,4 @@ TEST_REPORT_CONVENIENT_CONVERSIONS.md
 .python-version
 uv.lock
 site
+dist

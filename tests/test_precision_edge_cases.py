@@ -11,7 +11,7 @@ import math
 from decimal import Decimal
 from typing import Any, List, Tuple, Union
 
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 
 class TestExtremeValues:
@@ -211,7 +211,7 @@ class TestConcurrencyAndStateManagement:
             Storage(1.111111, StorageUnit.MB),
             Storage(2.222222, StorageUnit.GB), 
             Storage(3.333333, StorageUnit.KB),
-            ByteUnit(4.444444, StorageUnit.TB),  # Test alias too
+            FileSizeLib(4.444444, StorageUnit.TB),  # Test alias too
         ]
         
         Storage.set_decimal_precision(3)

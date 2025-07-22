@@ -1,10 +1,10 @@
 # Basic Concepts
 
-Understanding the core concepts behind ByteUnit will help you use the library more effectively.
+Understanding the core concepts behind FileSizeLib will help you use the library more effectively.
 
 ## 🧠 Storage Units Overview
 
-Storage units represent different ways to measure digital information. ByteUnit supports three main categories:
+Storage units represent different ways to measure digital information. FileSizeLib supports three main categories:
 
 ```mermaid
 graph TD
@@ -58,11 +58,11 @@ Decimal units use powers of 10 and are more commonly used by manufacturers:
 ### Why the Difference Matters
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 # A "1 GB" hard drive actually has different capacities:
 decimal_gb = Storage(1, StorageUnit.GB)  # 1,000,000,000 bytes
-binary_gib = ByteUnit(1, StorageUnit.GIB) # 1,073,741,824 bytes (using alias)
+binary_gib = FileSizeLib(1, StorageUnit.GIB) # 1,073,741,824 bytes (using alias)
 
 print(f"1 GB = {decimal_gb.convert_to_bytes():,.0f} bytes")
 print(f"1 GiB = {binary_gib.convert_to_bytes():,.0f} bytes")
@@ -77,21 +77,21 @@ print(f"Difference: {(binary_gib - decimal_gb).convert_to_bytes():,.0f} bytes")
 !!! info "Real-World Impact"
     This is why a "500 GB" hard drive might show as only ~465 GiB in your operating system!
 
-## 💾 The Storage Class (and ByteUnit Alias)
+## 💾 The Storage Class (and FileSizeLib Alias)
 
-The `Storage` class is the heart of ByteUnit. It represents a storage value with these key properties.
-For convenience, you can also use `ByteUnit` as an identical alias to `Storage`.
+The `Storage` class is the heart of FileSizeLib. It represents a storage value with these key properties.
+For convenience, you can also use `FileSizeLib` as an identical alias to `Storage`.
 
 ### Core Components
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 storage = Storage(1.5, StorageUnit.GB)
 # Or equivalently:
-storage_alias = ByteUnit(1.5, StorageUnit.GB)  # ByteUnit is identical to Storage
+storage_alias = FileSizeLib(1.5, StorageUnit.GB)  # FileSizeLib is identical to Storage
 
-# Core properties (same for both Storage and ByteUnit)
+# Core properties (same for both Storage and FileSizeLib)
 print(f"Value: {storage.value}")  # 1.5
 print(f"Unit: {storage.unit}")    # StorageUnit.GB
 print(f"Bytes: {storage.convert_to_bytes()}")  # 1500000000.0
@@ -114,18 +114,18 @@ print(f"Doubled: {doubled}")    # 2.0 GB (new object)
 Bytesize provides complete type annotations for better IDE support:
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 from typing import Union
 
 def calculate_bandwidth(file_size: Storage, time_seconds: float) -> Storage:
     """Calculate bandwidth given file size and time."""
     bytes_per_second = file_size.convert_to_bytes() / time_seconds
-    return ByteUnit.parse_from_bytes(bytes_per_second)  # Can use either Storage or ByteUnit
+    return FileSizeLib.parse_from_bytes(bytes_per_second)  # Can use either Storage or FileSizeLib}
 ```
 
 ## 🔄 Conversion Philosophy
 
-ByteUnit provides two approaches to unit conversion:
+FileSizeLib provides two approaches to unit conversion:
 
 ### 1. Explicit Conversion
 
@@ -150,7 +150,7 @@ assert storage.convert_to(StorageUnit.MB) == storage.convert_to_mb()
 
 ### Auto-Scaling
 
-ByteUnit can automatically choose the best unit for display:
+FileSizeLib can automatically choose the best unit for display:
 
 ```python
 large_file = Storage(1536000000, StorageUnit.BYTES)
@@ -165,7 +165,7 @@ decimal = large_file.auto_scale(prefer_binary=False) # 1.536 GB
 
 ## 🧮 Smart Arithmetic Operations
 
-ByteUnit supports natural arithmetic operations with intelligent unit handling. When both operands have the same unit, the result preserves that unit for better readability:
+FileSizeLib supports natural arithmetic operations with intelligent unit handling. When both operands have the same unit, the result preserves that unit for better readability:
 
 ### Basic Operations
 
@@ -193,7 +193,7 @@ graph LR
 4. **Division**: Can return Storage (when dividing by a number) or float (when dividing by Storage)
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 # Same-unit operations preserve unit
 same_unit_1 = Storage(1, StorageUnit.GB)
@@ -220,17 +220,17 @@ print(f"Ratio: {ratio:.2f}")       # 2.93
 
 ## 📁 File System Integration
 
-ByteUnit integrates seamlessly with Python's file system operations:
+FileSizeLib integrates seamlessly with Python's file system operations:
 
 ### Path Handling
 
 ```python
 from pathlib import Path
-from byteunit import Storage, ByteUnit
+from filesizelib import Storage, FileSizeLib
 
-# Works with strings and Path objects (use Storage or ByteUnit)
+# Works with strings and Path objects (use Storage or FileSizeLib)
 file_size = Storage.get_size_from_path("README.md")
-dir_size = ByteUnit.get_size_from_path(Path("./docs"))  # Same functionality
+dir_size = FileSizeLib.get_size_from_path(Path("./docs"))  # Same functionality
 
 print(f"File: {file_size.auto_scale()}")
 print(f"Directory: {dir_size.auto_scale()}")
@@ -238,7 +238,7 @@ print(f"Directory: {dir_size.auto_scale()}")
 
 ### Platform Optimizations
 
-ByteUnit provides platform-specific optimizations:
+FileSizeLib provides platform-specific optimizations:
 
 ```mermaid
 graph TD
@@ -261,19 +261,19 @@ graph TD
 
 ## 🔤 String Parsing Flexibility
 
-ByteUnit's string parser is designed to handle real-world input:
+FileSizeLib's string parser is designed to handle real-world input:
 
 ### Supported Formats
 
 ```python
-# All of these work (Storage and ByteUnit identical):
+# All of these work (Storage and FileSizeLib identical):
 sizes = [
     Storage.parse("1.5 GB"),      # Standard format
-    ByteUnit.parse("1.5GB"),      # No space (using alias)
+    FileSizeLib.parse("1.5GB"),      # No space (using alias)
     Storage.parse("1,5 GB"),      # European decimal
-    ByteUnit.parse("1.5 gb"),     # Lowercase (using alias)
+    FileSizeLib.parse("1.5 gb"),     # Lowercase (using alias)
     Storage.parse("1.5 gigabytes"), # Full name
-    ByteUnit.parse("1.5 g"),      # Single letter (using alias)
+    FileSizeLib.parse("1.5 g"),      # Single letter (using alias)
     Storage.parse("1536"),        # Just number (bytes)
 ]
 
@@ -287,7 +287,7 @@ sizes = [
 
 ## 🎯 Design Philosophy
 
-ByteUnit follows these core principles:
+FileSizeLib follows these core principles:
 
 ### Pythonic
 
@@ -312,7 +312,7 @@ print(f"File size: {file_size.convert_to_mb()}")
 
 ### Zero Dependencies
 
-ByteUnit uses only Python's standard library, making it:
+FileSizeLib uses only Python's standard library, making it:
 - Lightweight and fast to install
 - More secure (fewer attack vectors)
 - Highly compatible across Python versions
@@ -324,7 +324,7 @@ ByteUnit uses only Python's standard library, making it:
 
 ```python
 # These operations are optimized:
-large_list = [ByteUnit.parse(f"{i} MB") for i in range(1000)]  # Using alias
+large_list = [FileSizeLib.parse(f"{i} MB") for i in range(1000)]  # Using alias
 total = sum(large_list, Storage(0, StorageUnit.BYTES))  # Efficient sum
 
 # Same-unit operations are extra efficient (no conversion needed)
@@ -348,10 +348,10 @@ Each platform-specific storage class provides optimized file operations:
 
 ## 🎨 Decimal Precision Control
 
-ByteUnit eliminates scientific notation and provides configurable decimal precision:
+FileSizeLib eliminates scientific notation and provides configurable decimal precision:
 
 ```python
-from byteunit import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit
 
 # Default precision (20 decimal places) - no scientific notation
 small_value = Storage(9.872019291e-05, StorageUnit.GIB)

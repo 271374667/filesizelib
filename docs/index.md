@@ -1,11 +1,11 @@
-<center><h1>📏 ByteUnit</h1>
+<center><h1>📏 FileSizeLib</h1>
 
 A unified storage unit library for Python with cross-platform file size support
 </center>
 
-## 🚀 What is ByteUnit?
+## 🚀 What is FileSizeLib?
 
-ByteUnit is a powerful and intuitive Python storage unit library that makes it easy to handle calculations, conversions, and operations with various storage sizes. Whether you're working with file sizes, network bandwidth, or storage capacity, ByteUnit makes these tasks simple and elegant.
+FileSizeLib is a powerful and intuitive Python storage unit library that makes it easy to handle calculations, conversions, and operations with various storage sizes. Whether you're working with file sizes, network bandwidth, or storage capacity, FileSizeLib makes these tasks simple and elegant.
 
 ## ✨ Core Features
 
@@ -64,11 +64,11 @@ ByteUnit is a powerful and intuitive Python storage unit library that makes it e
 ## 🎯 Quick Example
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
-# Create storage values (Storage and ByteUnit are identical)
+# Create storage values (Storage and FileSizeLib are identical)
 file_size = Storage(1.5, StorageUnit.GB)
-backup_size = ByteUnit.parse("2.5 GB")  # ByteUnit alias
+backup_size = FileSizeLib.parse("2.5 GB")  # FileSizeLib alias
 
 # Smart arithmetic - same units preserve unit!
 same_unit_total = file_size + backup_size
@@ -120,10 +120,10 @@ graph TD
     style D fill:#fff3e0
 ```
 
-## 🌟 Why Choose ByteUnit?
+## 🌟 Why Choose FileSizeLib?
 
 ### Simple to Use
-ByteUnit's API is designed to be intuitive and follows Python best practices. You can accomplish complex storage unit operations with minimal code.
+FileSizeLib's API is designed to be intuitive and follows Python best practices. You can accomplish complex storage unit operations with minimal code.
 
 ### Performance Optimized
 Built-in platform-specific optimizations ensure optimal performance across different operating systems.
@@ -166,7 +166,7 @@ graph LR
 
 -   [:material-rocket-launch: **Quick Start**](getting-started/quick-start.md)
     
-    Learn ByteUnit basics in 5 minutes
+    Learn FileSizeLib basics in 5 minutes
 
 -   [:material-book-open-page-variant: **User Guide**](user-guide/index.md)
     
@@ -184,4 +184,4 @@ graph LR
 
 ---
 
-**Start your ByteUnit journey** [Install Now :material-download:](getting-started/installation.md){ .md-button .md-button--primary }
+**Start your FileSizeLib journey** [Install Now :material-download:](getting-started/installation.md){ .md-button .md-button--primary }

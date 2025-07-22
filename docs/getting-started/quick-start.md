@@ -1,6 +1,6 @@
 # Quick Start
 
-This 5-minute tutorial will quickly introduce you to ByteUnit's core features.
+This 5-minute tutorial will quickly introduce you to FileSizeLib's core features.
 
 ## 🎯 Goals
 
@@ -14,10 +14,10 @@ After completing this tutorial, you'll be able to:
 
 ## 💾 1. Creating Storage Objects
 
-Storage (and its alias ByteUnit) is ByteUnit's core class, representing a storage size value:
+Storage (and its alias FileSizeLib) is FileSizeLib's core class, representing a storage size value:
 
 ```python
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 # Method 1: Using numeric values and unit enums
 file_size = Storage(1.5, StorageUnit.GB)
@@ -35,7 +35,7 @@ print(f"Music size: {music_size}")  # 128.0 MB
 
 ## 🧮 2. Arithmetic Operations
 
-ByteUnit supports intuitive arithmetic operations with smart unit preservation:
+FileSizeLib supports intuitive arithmetic operations with smart unit preservation:
 
 ```python
 # Addition: Smart unit preservation for same units
@@ -96,12 +96,12 @@ assert large_file.convert_to_mib() == traditional
 
 ## 📝 4. String Parsing
 
-ByteUnit supports multiple string formats with ByteUnit alias:
+FileSizeLib supports multiple string formats with FileSizeLib alias:
 
 ```python
-# Basic formats (Storage and ByteUnit work identically)
+# Basic formats (Storage and FileSizeLib work identically)
 size1 = Storage.parse("1.5 GB")
-size2 = ByteUnit.parse("2.5TB")         # ByteUnit alias
+size2 = FileSizeLib.parse("2.5TB")         # FileSizeLib alias
 size3 = Storage.parse("512 mb")         # Lowercase
 
 # Different decimal separators
@@ -166,7 +166,7 @@ decimal_scale = huge_file.auto_scale(prefer_binary=False) # 1.5 GB
 
 ## 🎨 7. Decimal Precision Control
 
-ByteUnit provides configurable decimal precision without scientific notation:
+FileSizeLib provides configurable decimal precision without scientific notation:
 
 ```python
 # Default precision (20 decimal places)
@@ -186,7 +186,7 @@ Storage.set_decimal_precision(20)
 
 ## 🔗 8. Method Chaining
 
-ByteUnit supports elegant chaining operations:
+FileSizeLib supports elegant chaining operations:
 
 ```python
 # Complex conversion chain
@@ -209,11 +209,11 @@ Let's look at a complete real-world application scenario showcasing new features
 
 ```python
 def analyze_media_library(photos_count, video_count):
-    """Analyze media library storage requirements with ByteUnit"""
+    """Analyze media library storage requirements with FileSizeLib"""
     
-    # Estimate sizes using ByteUnit alias
-    avg_photo = ByteUnit.parse("2.5 MiB")
-    avg_video = ByteUnit.parse("500 MB")
+    # Estimate sizes using FileSizeLib alias
+    avg_photo = FileSizeLib.parse("2.5 MiB")
+    avg_video = FileSizeLib.parse("500 MB")
     
     # Same-unit arithmetic preserves units
     if photos_count > 1:
@@ -249,9 +249,9 @@ analyze_media_library(photos_count=1000, video_count=50)
 
 ## 🎉 Congratulations!
 
-You've mastered ByteUnit's core features! Now you can:
+You've mastered FileSizeLib's core features! Now you can:
 
-- ✅ Create and manipulate Storage/ByteUnit objects
+- ✅ Create and manipulate Storage/FileSizeLib objects
 - ✅ Perform smart arithmetic with unit preservation
 - ✅ Control decimal precision and eliminate scientific notation
 - ✅ Use convenient conversion methods

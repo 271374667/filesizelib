@@ -10,7 +10,7 @@ import math
 from decimal import Decimal
 from typing import Any, List, Tuple, Union
 
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 
 class TestDecimalPrecisionConfiguration:
@@ -88,11 +88,11 @@ class TestDecimalPrecisionConfiguration:
         assert "9.877" in str(s2)  # Rounded to 3 decimal places
     
     def test_precision_affects_byte_unit_alias(self):
-        """Test that precision setting affects ByteUnit alias."""
+        """Test that precision setting affects FileSizeLib alias."""
         Storage.set_decimal_precision(2)
         
         storage = Storage(1.23456, StorageUnit.MB)
-        byte_unit = ByteUnit(1.23456, StorageUnit.MB)
+        byte_unit = FileSizeLib(1.23456, StorageUnit.MB)
         
         # Both should have same formatting
         assert str(storage) == str(byte_unit)

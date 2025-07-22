@@ -9,7 +9,7 @@ for different unit operations.
 import pytest
 from typing import Any, List, Tuple, Union
 
-from byteunit import Storage, StorageUnit, ByteUnit
+from filesizelib import Storage, StorageUnit, FileSizeLib
 
 
 class TestSameUnitAddition:
@@ -108,9 +108,9 @@ class TestSameUnitAddition:
         assert result.unit == StorageUnit.BITS
     
     def test_byteunit_alias_addition(self):
-        """Test that ByteUnit alias works with same-unit addition."""
-        b1 = ByteUnit(1, StorageUnit.GB)
-        b2 = ByteUnit(2, StorageUnit.GB)
+        """Test that FileSizeLib alias works with same-unit addition."""
+        b1 = FileSizeLib(1, StorageUnit.GB)
+        b2 = FileSizeLib(2, StorageUnit.GB)
         result = b1 + b2
         
         assert result.value == 3.0
@@ -118,8 +118,8 @@ class TestSameUnitAddition:
     
     def test_user_example_case(self):
         """Test the specific user example from the request."""
-        a = ByteUnit.parse('53 KB').convert_to_gb()
-        b = ByteUnit.parse('53 KB').convert_to_gb()
+        a = FileSizeLib.parse('53 KB').convert_to_gb()
+        b = FileSizeLib.parse('53 KB').convert_to_gb()
         result = a + b
         
         # Both should be in GB units

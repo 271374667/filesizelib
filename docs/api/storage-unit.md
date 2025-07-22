@@ -1,6 +1,6 @@
 # StorageUnit Enum
 
-::: byteunit.storage_unit.StorageUnit
+::: filesizelib.storage_unit.StorageUnit
     options:
       show_root_heading: true
       show_source: false

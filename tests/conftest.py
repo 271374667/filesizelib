@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Generator, List, Tuple, Any
 import pytest
 
-from byteunit import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit
 from byteunit.platform_storage import WindowsStorage, LinuxStorage, MacStorage
 
 

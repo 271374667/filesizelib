@@ -1,6 +1,6 @@
 # Storage Class
 
-::: byteunit.storage.Storage
+::: filesizelib.storage.Storage
     options:
       show_root_heading: true
       show_source: false

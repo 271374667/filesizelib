@@ -4,7 +4,7 @@ Platform-specific storage implementations for optimized file operations.
 
 ## Base Classes
 
-::: byteunit.platform_storage.PlatformStorageBase
+::: filesizelib.platform_storage.PlatformStorageBase
     options:
       show_root_heading: true
       show_source: false
@@ -16,7 +16,7 @@ Platform-specific storage implementations for optimized file operations.
 
 ## Platform Implementations
 
-::: byteunit.platform_storage.WindowsStorage
+::: filesizelib.platform_storage.WindowsStorage
     options:
       show_root_heading: true
       show_source: false
@@ -26,7 +26,7 @@ Platform-specific storage implementations for optimized file operations.
       filters:
         - "!^_"
 
-::: byteunit.platform_storage.LinuxStorage
+::: filesizelib.platform_storage.LinuxStorage
     options:
       show_root_heading: true
       show_source: false
@@ -36,7 +36,7 @@ Platform-specific storage implementations for optimized file operations.
       filters:
         - "!^_"
 
-::: byteunit.platform_storage.MacStorage
+::: filesizelib.platform_storage.MacStorage
     options:
       show_root_heading: true
       show_source: false
