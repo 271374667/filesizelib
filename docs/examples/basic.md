@@ -1,6 +1,6 @@
 # Basic Usage Examples
 
-Simple, fundamental examples to get you started with Bytesize quickly.
+Simple, fundamental examples to get you started with ByteUnit quickly.
 
 ## 🚀 Getting Started
 
@@ -9,16 +9,16 @@ Simple, fundamental examples to get you started with Bytesize quickly.
 The most basic way to work with storage values:
 
 ```python
-from bytesize import Storage, StorageUnit
+from byteunit import Storage, StorageUnit, ByteUnit
 
-# Method 1: Constructor with value and unit
+# Method 1: Constructor with value and unit (Storage and ByteUnit are identical)
 file_size = Storage(1.5, StorageUnit.GB)
-memory = Storage(8, StorageUnit.GIB)
+memory = ByteUnit(8, StorageUnit.GIB)  # Using alias
 small_file = Storage(512, StorageUnit.BYTES)
 
 print(f"File: {file_size}")      # File: 1.5 GB
 print(f"Memory: {memory}")       # Memory: 8.0 GIB
-print(f"Small: {small_file}")    # Small: 512.0 BYTES
+print(f"Small: {small_file}")    # Small: 512 BYTES (integers don't show .0)
 ```
 
 ### Parsing from Strings
@@ -28,19 +28,19 @@ Convert human-readable strings into Storage objects:
 ```python
 # Method 2: Parse from strings (recommended for user input)
 download = Storage.parse("150 MB")
-backup = Storage.parse("2.3 TB")
+backup = ByteUnit.parse("2.3 TB")  # Using alias
 cache = Storage.parse("512 MiB")
 
-print(f"Download: {download}")   # Download: 150.0 MB
+print(f"Download: {download}")   # Download: 150 MB
 print(f"Backup: {backup}")       # Backup: 2.3 TB
-print(f"Cache: {cache}")         # Cache: 512.0 MIB
+print(f"Cache: {cache}")         # Cache: 512 MIB
 
 # Flexible parsing formats
 flexible_examples = [
     Storage.parse("1.5GB"),        # No space
-    Storage.parse("1,5 GB"),       # European decimal separator
+    ByteUnit.parse("1,5 GB"),      # European decimal separator (using alias)
     Storage.parse("1024 kb"),      # Lowercase units
-    Storage.parse("2 terabytes"),  # Full unit names (if supported)
+    ByteUnit.parse("2 terabytes"), # Full unit names (using alias)
 ]
 
 for storage in flexible_examples:
@@ -56,7 +56,7 @@ from pathlib import Path
 
 # Method 3: From file system
 readme_size = Storage.get_size_from_path("README.md")
-docs_size = Storage.get_size_from_path("./docs")
+docs_size = ByteUnit.get_size_from_path("./docs")  # Using alias
 
 print(f"README size: {readme_size.auto_scale()}")
 print(f"Documentation size: {docs_size.auto_scale()}")
@@ -67,7 +67,28 @@ config_size = Storage.get_size_from_path(config_path)
 print(f"Config size: {config_size}")
 ```
 
-## 🧮 Basic Arithmetic
+## 🧮 Smart Arithmetic
+
+### Same-Unit vs Mixed-Unit Operations
+
+ByteUnit now features intelligent arithmetic that preserves units when both operands have the same unit:
+
+```python
+# Same-unit operations preserve the unit
+same_unit_1 = Storage(1, StorageUnit.GB)
+same_unit_2 = Storage(2, StorageUnit.GB)
+total_same = same_unit_1 + same_unit_2
+print(f"Same units: {total_same}")  # 3 GB (unit preserved!)
+
+# Mixed-unit operations convert to bytes
+mixed_1 = Storage(1, StorageUnit.GB)
+mixed_2 = Storage(500, StorageUnit.MB)
+total_mixed = mixed_1 + mixed_2
+print(f"Mixed units: {total_mixed}")  # 1500000000 BYTES
+
+# Use auto_scale for readability
+print(f"Readable: {total_mixed.auto_scale()}")  # 1.4 GIB
+```
 
 ### Addition and Subtraction
 
@@ -76,15 +97,15 @@ print(f"Config size: {config_size}")
 video_file = Storage(4.7, StorageUnit.GB)    # DVD movie
 subtitle_file = Storage(50, StorageUnit.KB)  # Subtitle file
 
-# Addition
+# Mixed units convert to bytes
 total_download = video_file + subtitle_file
-print(f"Total download: {total_download.auto_scale()}")  # 4.7 GB
+print(f"Total download: {total_download.auto_scale()}")  # 4.37 GIB
 
-# Subtraction
+# Same-unit subtraction preserves unit
 disk_capacity = Storage(500, StorageUnit.GB)
 used_space = Storage(387, StorageUnit.GB)
 free_space = disk_capacity - used_space
-print(f"Free space: {free_space}")  # 113.0 GB
+print(f"Free space: {free_space}")  # 113 GB (unit preserved!)
 ```
 
 ### Multiplication and Division
@@ -200,7 +221,7 @@ print(f"Smallest: {smallest.auto_scale()}") # 150.0 MB
 def calculate_download_time(file_size_str: str, speed_str: str) -> str:
     """Calculate download time for a file."""
     file_size = Storage.parse(file_size_str)
-    speed = Storage.parse(speed_str)
+    speed = ByteUnit.parse(speed_str)  # Using alias
     
     # Convert to bits for bandwidth calculation
     file_bits = file_size.convert_to_bits()
@@ -230,7 +251,7 @@ def check_disk_space(path: str, warning_threshold: str = "1 GB"):
     """Check if disk space is getting low."""
     try:
         # Get directory size (this is a simple example)
-        used_space = Storage.get_size_from_path(path)
+        used_space = ByteUnit.get_size_from_path(path)  # Using alias
         threshold = Storage.parse(warning_threshold)
         
         print(f"Directory: {path}")
@@ -255,7 +276,7 @@ check_disk_space("./tests", "5 MB")
 def categorize_file_size(file_path: str) -> str:
     """Categorize a file by its size."""
     try:
-        size = Storage.get_size_from_path(file_path)
+        size = ByteUnit.get_size_from_path(file_path)  # Using alias
         size_bytes = size.convert_to_bytes()
         
         if size_bytes < 1024:  # < 1 KB
@@ -285,13 +306,13 @@ class DataUsageTracker:
     """Track data usage over time."""
     
     def __init__(self, monthly_limit: str):
-        self.monthly_limit = Storage.parse(monthly_limit)
+        self.monthly_limit = ByteUnit.parse(monthly_limit)  # Using alias
         self.current_usage = Storage(0, StorageUnit.BYTES)
         self.daily_usage = []
     
     def add_usage(self, amount: str):
         """Add data usage."""
-        usage = Storage.parse(amount)
+        usage = ByteUnit.parse(amount)  # Using alias
         self.current_usage += usage
         self.daily_usage.append(usage)
         print(f"Added {usage}, total: {self.current_usage.auto_scale()}")
@@ -329,14 +350,32 @@ tracker.add_usage("2.1 GB")  # Software download
 tracker.status_report()
 ```
 
-## 🎯 String Formatting
+## 🎯 String Formatting & Decimal Precision
+
+### Configurable Precision (No Scientific Notation)
+
+```python
+# ByteUnit eliminates scientific notation by default
+small_value = Storage(9.872019291e-05, StorageUnit.GIB)
+print(f"No scientific notation: {small_value}")  # 0.00009872019291 GIB
+
+# Configure global precision
+Storage.set_decimal_precision(5)
+print(f"5 decimals: {small_value}")  # 0.0001 GIB
+
+# Check current precision
+print(f"Current: {ByteUnit.get_decimal_precision()}")  # 5
+
+# Reset to default
+Storage.set_decimal_precision(20)
+```
 
 ### Display Formatting
 
 ```python
 storage = Storage(1234.5678, StorageUnit.MB)
 
-# Default string representation
+# Default string representation (uses configured precision)
 print(f"Default: {storage}")           # 1234.5678 MB
 
 # Custom precision using format
@@ -345,7 +384,7 @@ print(f"No decimals: {storage:.0f}")   # 1235 MB
 print(f"4 decimals: {storage:.4f}")    # 1234.5678 MB
 
 # Auto-scaled formatting
-print(f"Auto-scaled: {storage.auto_scale()}")  # 1.23 GB
+print(f"Auto-scaled: {storage.auto_scale()}")  # 1.17 GIB
 ```
 
 ### Repr for Debugging
@@ -372,7 +411,7 @@ print(f"Value: {storage!s}, Debug: {storage!r}")
 def safe_parse(size_string: str) -> Storage:
     """Safely parse size string."""
     try:
-        return Storage.parse(size_string)
+        return ByteUnit.parse(size_string)  # Using alias
     except ValueError as e:
         print(f"Parse error: {e}")
         return Storage(0, StorageUnit.BYTES)  # Default fallback
@@ -385,7 +424,7 @@ print(safe_parse("invalid"))   # 0.0 BYTES (with error message)
 def safe_file_size(file_path: str) -> Storage:
     """Safely get file size."""
     try:
-        return Storage.get_size_from_path(file_path)
+        return ByteUnit.get_size_from_path(file_path)  # Using alias
     except FileNotFoundError:
         print(f"File not found: {file_path}")
         return Storage(0, StorageUnit.BYTES)
@@ -425,4 +464,4 @@ Ready to explore more advanced features?
 
 ---
 
-These basic examples provide a solid foundation for using Bytesize. All examples are tested and ready to run!
+These basic examples provide a solid foundation for using ByteUnit. All examples are tested and ready to run!

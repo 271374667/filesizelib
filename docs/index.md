@@ -11,11 +11,11 @@ ByteUnit is a powerful and intuitive Python storage unit library that makes it e
 
 <div class="grid cards" markdown>
 
--   :material-scale-balance:{ .lg .middle } **🧮 Full Arithmetic Support**
+-   :material-scale-balance:{ .lg .middle } **🧮 Smart Arithmetic with Unit Preservation**
 
     ---
 
-    Support for addition, subtraction, multiplication, and division with automatic unit conversion
+    Same-unit operations preserve units (1 GB + 2 GB = 3 GB), different units convert automatically
 
     [:octicons-arrow-right-24: View arithmetic operations](api/storage.md#arithmetic-operations)
 
@@ -66,21 +66,29 @@ ByteUnit is a powerful and intuitive Python storage unit library that makes it e
 ```python
 from byteunit import Storage, StorageUnit, ByteUnit
 
-# Create storage values
+# Create storage values (Storage and ByteUnit are identical)
 file_size = Storage(1.5, StorageUnit.GB)
-backup_size = Storage.parse("2.5 TB")
+backup_size = ByteUnit.parse("2.5 GB")  # ByteUnit alias
 
-# Arithmetic operations
-total = file_size + backup_size
-print(f"Total size: {total.auto_scale()}")  # Output: Total size: 2.502 TB
+# Smart arithmetic - same units preserve unit!
+same_unit_total = file_size + backup_size
+print(f"Same unit: {same_unit_total}")  # Output: 4.0 GB
+
+# Configure decimal precision (eliminates scientific notation)
+Storage.set_decimal_precision(5)
+small_value = Storage(1.23456789e-5, StorageUnit.TB)
+print(f"Precise: {small_value}")  # Output: 0.00001 TB (no scientific notation!)
 
 # Convenient conversion methods
 print(f"File size (MB): {file_size.convert_to_mb()}")  # 1500.0 MB
-print(f"Backup size (GiB): {backup_size.convert_to_gib()}")  # 2328.31 GiB
+print(f"Backup size (GiB): {backup_size.convert_to_gib()}")  # 2.33 GiB
 
 # File operations
 dir_size = Storage.get_size_from_path("/path/to/directory")
 print(f"Directory size: {dir_size.auto_scale()}")
+
+# Reset precision to default
+Storage.set_decimal_precision(20)
 ```
 
 ## 🛠️ Supported Unit Types

@@ -9,7 +9,8 @@ A unified storage unit library for Python with cross-platform file size support.
 ## Features
 
 - 📦 **Comprehensive Unit Support**: Binary (KiB, MiB, GiB...), decimal (KB, MB, GB...), and bit units
-- 🧮 **Full Arithmetic Support**: Add, subtract, multiply, divide storage values with automatic unit handling
+- 🧮 **Smart Arithmetic Support**: Same-unit operations preserve units (1 GB + 2 GB = 3 GB), mixed units convert automatically
+- 🎯 **Configurable Precision**: Eliminate scientific notation with configurable decimal precision (no more 1.23e-05 GB!)
 - 📝 **Flexible String Parsing**: Case-insensitive parsing with support for various formats and separators
 - 🔗 **Cross-Platform File Operations**: Get file and directory sizes using `pathlib` with platform-specific optimizations
 - ⚡ **Platform-Specific Optimizations**: Windows, Linux, and macOS-specific implementations for better performance
@@ -35,10 +36,10 @@ storage2 = Storage(512, StorageUnit.BYTES)
 byte_unit = ByteUnit(1024, StorageUnit.BYTES)
 print(storage1 == byte_unit)  # True
 
-# Arithmetic operations
-total = storage1 + storage2  # 1536.0 BYTES
-difference = storage1 - storage2  # 512.0 BYTES
-doubled = storage1 * 2  # 2.0 KIB
+# Smart arithmetic - same units preserve unit, mixed units convert to bytes
+same_unit_total = Storage(1, StorageUnit.GB) + Storage(2, StorageUnit.GB)  # 3 GB (preserved!)
+mixed_unit_total = storage1 + storage2  # 1536 BYTES (converted)
+doubled = storage1 * 2  # 2 KIB
 
 # Comparisons
 print(storage1 > storage2)  # True
@@ -58,6 +59,11 @@ size5 = Storage.parse("1024")        # 1024.0 BYTES (defaults to bytes)
 # Auto-scaling for human-readable output
 large_size = Storage(1536000000, StorageUnit.BYTES)
 print(large_size.auto_scale())  # 1.43 GIB (binary) or 1.536 GB (decimal)
+
+# Decimal precision control (eliminates scientific notation)
+Storage.set_decimal_precision(5)  # Configure precision globally
+small_value = Storage(9.872019291e-05, StorageUnit.GIB)
+print(f"Precise: {small_value}")  # 0.0001 GIB (no scientific notation!)
 
 # File operations
 file_size = Storage.get_size_from_path("/path/to/file.txt")

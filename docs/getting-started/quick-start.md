@@ -1,6 +1,6 @@
 # Quick Start
 
-This 5-minute tutorial will quickly introduce you to Bytesize's core features.
+This 5-minute tutorial will quickly introduce you to ByteUnit's core features.
 
 ## 🎯 Goals
 
@@ -14,10 +14,10 @@ After completing this tutorial, you'll be able to:
 
 ## 💾 1. Creating Storage Objects
 
-Storage is Bytesize's core class, representing a storage size value:
+Storage (and its alias ByteUnit) is ByteUnit's core class, representing a storage size value:
 
 ```python
-from bytesize import Storage, StorageUnit
+from byteunit import Storage, StorageUnit, ByteUnit
 
 # Method 1: Using numeric values and unit enums
 file_size = Storage(1.5, StorageUnit.GB)
@@ -35,12 +35,18 @@ print(f"Music size: {music_size}")  # 128.0 MB
 
 ## 🧮 2. Arithmetic Operations
 
-Bytesize supports intuitive arithmetic operations:
+ByteUnit supports intuitive arithmetic operations with smart unit preservation:
 
 ```python
-# Addition: Calculate total size
-total_media = video_size + music_size
-print(f"Total media size: {total_media}")  # 4328.0 MB
+# Addition: Smart unit preservation for same units
+same_unit_1 = Storage(1, StorageUnit.GB)
+same_unit_2 = Storage(2, StorageUnit.GB)
+total_same = same_unit_1 + same_unit_2
+print(f"Same unit result: {total_same}")  # 3 GB (preserves unit!)
+
+# Different units still convert to bytes
+total_mixed = video_size + music_size
+print(f"Mixed units result: {total_mixed}")  # In bytes
 
 # Subtraction: Calculate remaining space
 disk_capacity = Storage.parse("500 GB")
@@ -90,12 +96,12 @@ assert large_file.convert_to_mib() == traditional
 
 ## 📝 4. String Parsing
 
-Bytesize supports multiple string formats:
+ByteUnit supports multiple string formats with ByteUnit alias:
 
 ```python
-# Basic formats
+# Basic formats (Storage and ByteUnit work identically)
 size1 = Storage.parse("1.5 GB")
-size2 = Storage.parse("2.5TB")          # No space
+size2 = ByteUnit.parse("2.5TB")         # ByteUnit alias
 size3 = Storage.parse("512 mb")         # Lowercase
 
 # Different decimal separators
@@ -158,9 +164,29 @@ binary_scale = huge_file.auto_scale(prefer_binary=True)   # 1.4 GIB
 decimal_scale = huge_file.auto_scale(prefer_binary=False) # 1.5 GB
 ```
 
-## 🔗 7. Method Chaining
+## 🎨 7. Decimal Precision Control
 
-Bytesize supports elegant chaining operations:
+ByteUnit provides configurable decimal precision without scientific notation:
+
+```python
+# Default precision (20 decimal places)
+small_value = Storage(9.872019291e-05, StorageUnit.GIB)
+print(f"Default: {small_value}")  # 0.00009872019291 GIB (no scientific notation!)
+
+# Configure precision
+Storage.set_decimal_precision(5)
+print(f"5 decimals: {small_value}")  # 0.0001 GIB
+
+# Get current precision
+print(f"Current precision: {Storage.get_decimal_precision()}")  # 5
+
+# Reset to default
+Storage.set_decimal_precision(20)
+```
+
+## 🔗 8. Method Chaining
+
+ByteUnit supports elegant chaining operations:
 
 ```python
 # Complex conversion chain
@@ -179,18 +205,25 @@ print(f"Total size: {total.auto_scale()}")
 
 ## 💡 Real-World Example
 
-Let's look at a complete real-world application scenario:
+Let's look at a complete real-world application scenario showcasing new features:
 
 ```python
 def analyze_media_library(photos_count, video_count):
-    """Analyze media library storage requirements"""
+    """Analyze media library storage requirements with ByteUnit"""
     
-    # Estimate sizes
-    avg_photo = Storage.parse("2.5 MiB")
-    avg_video = Storage.parse("500 MB")
+    # Estimate sizes using ByteUnit alias
+    avg_photo = ByteUnit.parse("2.5 MiB")
+    avg_video = ByteUnit.parse("500 MB")
     
-    photos_total = avg_photo * photos_count
-    videos_total = avg_video * video_count
+    # Same-unit arithmetic preserves units
+    if photos_count > 1:
+        photos_total = avg_photo * photos_count  # Still in MiB
+    else:
+        photos_total = avg_photo
+    
+    videos_total = avg_video * video_count  # Still in MB
+    
+    # Mixed units will convert to bytes
     total_needed = photos_total + videos_total
     
     # Available storage
@@ -216,10 +249,11 @@ analyze_media_library(photos_count=1000, video_count=50)
 
 ## 🎉 Congratulations!
 
-You've mastered Bytesize's core features! Now you can:
+You've mastered ByteUnit's core features! Now you can:
 
-- ✅ Create and manipulate Storage objects
-- ✅ Perform various arithmetic operations
+- ✅ Create and manipulate Storage/ByteUnit objects
+- ✅ Perform smart arithmetic with unit preservation
+- ✅ Control decimal precision and eliminate scientific notation
 - ✅ Use convenient conversion methods
 - ✅ Parse multiple string formats
 - ✅ Handle file and directory sizes

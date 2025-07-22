@@ -41,7 +41,7 @@ from .platform_storage import WindowsStorage, LinuxStorage, MacStorage
 # Both classes are functionally identical
 ByteUnit = Storage
 
-__version__ = "0.1.0"
+__version__ = "0.6.4"
 __author__ = "PythonImporter"
 __all__ = [
     "Storage",

@@ -1,10 +1,10 @@
 # User Guide
 
-Comprehensive guide to using Bytesize effectively in your projects.
+Comprehensive guide to using ByteUnit effectively in your projects.
 
 ## 🎯 Overview
 
-This user guide provides practical information for integrating Bytesize into your applications. Whether you're building a file manager, monitoring tool, or any application that deals with storage sizes, this guide will help you make the most of Bytesize.
+This user guide provides practical information for integrating ByteUnit into your applications. Whether you're building a file manager, monitoring tool, or any application that deals with storage sizes, this guide will help you make the most of ByteUnit.
 
 ## 📚 Guide Sections
 
@@ -12,7 +12,7 @@ This user guide provides practical information for integrating Bytesize into you
 
 -   [:material-rocket-launch: **Quick Start Guide**](../getting-started/quick-start.md)
     
-    Get up and running with Bytesize in minutes
+    Get up and running with ByteUnit in minutes
 
 -   [:material-lightbulb-on: **Best Practices**](best-practices.md)
     
@@ -25,35 +25,41 @@ This user guide provides practical information for integrating Bytesize into you
 ### Installation
 
 ```bash
-pip install bytesize
+pip install byteunit
 ```
 
 ### Basic Usage
 
 ```python
-from bytesize import Storage, StorageUnit
+from byteunit import Storage, StorageUnit, ByteUnit
 
-# Create storage objects
+# Create storage objects (Storage and ByteUnit are identical)
 file_size = Storage(1.5, StorageUnit.GB)
-memory = Storage(8, StorageUnit.GIB)
+memory = ByteUnit(8, StorageUnit.GIB)  # Using alias
 
 # Parse from strings
 download = Storage.parse("150 MB")
-upload = Storage.parse("2.3 TB")
+upload = ByteUnit.parse("2.3 TB")  # Using alias
 
-# Perform calculations
-total = file_size + download
+# Smart arithmetic - same units preserve unit
+same_unit_total = file_size + Storage(0.5, StorageUnit.GB)
+print(f"Same unit: {same_unit_total}")    # 2.0 GB (unit preserved!)
+
+# Mixed units convert to bytes
+mixed_total = file_size + download  
+print(f"Mixed: {mixed_total.auto_scale()}")  # 1.65 GB
+
 ratio = upload / download
-
-print(f"Total: {total.auto_scale()}")    # Total: 1.65 GB
 print(f"Ratio: {ratio:.1f}")             # Ratio: 15.7
 ```
 
 ## 🎯 Key Concepts
 
-### Storage Units
+### Storage Units & ByteUnit Alias
 
-Bytesize supports three types of storage units:
+ByteUnit provides both the main `Storage` class and an identical `ByteUnit` alias for convenience:
+
+ByteUnit supports three types of storage units:
 
 === "Binary Units (Base 1024)"
     
@@ -104,7 +110,7 @@ from pathlib import Path
 
 # Get file sizes
 readme_size = Storage.get_size_from_path("README.md")
-docs_size = Storage.get_size_from_path("./docs")
+docs_size = ByteUnit.get_size_from_path("./docs")  # Using alias
 
 print(f"README: {readme_size.auto_scale()}")
 print(f"Docs: {docs_size.auto_scale()}")
@@ -112,6 +118,27 @@ print(f"Docs: {docs_size.auto_scale()}")
 # Works with Path objects
 log_path = Path("/var/log")
 log_size = Storage.get_size_from_path(log_path)
+```
+
+### Decimal Precision Control
+
+ByteUnit eliminates scientific notation and provides configurable decimal precision:
+
+```python
+# Default precision avoids scientific notation
+small_value = Storage(9.872019291e-05, StorageUnit.GIB)
+print(f"No scientific notation: {small_value}")  # 0.00009872019291 GIB
+
+# Configure precision globally
+Storage.set_decimal_precision(3)
+print(f"3 decimals: {small_value}")  # 0.0001 GIB
+
+# Check current precision
+precision = ByteUnit.get_decimal_precision()
+print(f"Current precision: {precision}")  # 3
+
+# Reset to default
+Storage.set_decimal_precision(20)
 ```
 
 ## 🎨 Common Patterns
@@ -225,7 +252,7 @@ print(planner.get_summary())
 ```python
 # Flask example
 from flask import Flask, jsonify
-from bytesize import Storage
+from byteunit import Storage, ByteUnit
 
 app = Flask(__name__)
 
@@ -247,7 +274,7 @@ def disk_usage():
 
 ```python
 import pandas as pd
-from bytesize import Storage, StorageUnit
+from byteunit import Storage, StorageUnit, ByteUnit
 
 def analyze_log_files(log_dir: str) -> pd.DataFrame:
     """Analyze log files and return size information."""
@@ -273,7 +300,7 @@ print(df.head())
 
 ```python
 import configparser
-from bytesize import Storage
+from byteunit import Storage, ByteUnit
 
 # Read storage limits from config
 config = configparser.ConfigParser()
