@@ -8,13 +8,13 @@ A unified storage unit library for Python with cross-platform file size support.
 
 ## Features
 
-- =" **Comprehensive Unit Support**: Binary (KiB, MiB, GiB...), decimal (KB, MB, GB...), and bit units
-- >î **Full Arithmetic Support**: Add, subtract, multiply, divide storage values with automatic unit handling
-- = **Flexible String Parsing**: Case-insensitive parsing with support for various formats and separators
-- =Á **Cross-Platform File Operations**: Get file and directory sizes using `pathlib` with platform-specific optimizations
-- ¡ **Platform-Specific Optimizations**: Windows, Linux, and macOS-specific implementations for better performance
-- <¯ **Type Safety**: Complete type annotations for better IDE support and code safety
-- =« **Zero Dependencies**: Uses only Python standard library
+- ðŸ“¦ **Comprehensive Unit Support**: Binary (KiB, MiB, GiB...), decimal (KB, MB, GB...), and bit units
+- ðŸ§® **Full Arithmetic Support**: Add, subtract, multiply, divide storage values with automatic unit handling
+- ðŸ“ **Flexible String Parsing**: Case-insensitive parsing with support for various formats and separators
+- ðŸ”— **Cross-Platform File Operations**: Get file and directory sizes using `pathlib` with platform-specific optimizations
+- âš¡ **Platform-Specific Optimizations**: Windows, Linux, and macOS-specific implementations for better performance
+- ðŸ”’ **Type Safety**: Complete type annotations for better IDE support and code safety
+- ðŸŽ¯ **Zero Dependencies**: Uses only Python standard library
 
 ## Installation
 

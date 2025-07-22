@@ -67,6 +67,7 @@ test = [
 [dependency-groups]
 dev = [
     "hatchling>=1.27.0",
+    "mkdocs-material>=9.6.15",
     "pytest>=8.4.1",
 ]
 
