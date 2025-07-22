@@ -1,0 +1,101 @@
+/* Custom styles for Bytesize documentation */
+
+/* Grid cards styling improvements */
+.md-grid {
+  max-width: 1200px;
+}
+
+/* Code block improvements */
+.highlight {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Mermaid diagram styling */
+.mermaid {
+  text-align: center;
+  margin: 2em 0;
+}
+
+/* Custom admonitions */
+.md-typeset .admonition.info {
+  border-left-color: #2196F3;
+}
+
+.md-typeset .admonition.tip {
+  border-left-color: #4CAF50;
+}
+
+/* Table improvements */
+.md-typeset table:not([class]) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Button styling */
+.md-button {
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.md-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Code inline improvements */
+.md-typeset code {
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+/* Navigation improvements */
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+/* Custom hero section */
+.hero-banner {
+  text-align: center;
+  padding: 2rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+/* Performance badge */
+.performance-badge {
+  display: inline-block;
+  background: #4CAF50;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* API reference improvements */
+.api-section {
+  border-left: 3px solid #2196F3;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+}
+
+/* Cards grid improvements */
+.grid.cards {
+  gap: 1rem;
+}
+
+.grid.cards > .card {
+  border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grid.cards > .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
