@@ -16,7 +16,11 @@
 - 📦 **Comprehensive Unit Support**: Binary (KiB, MiB, GiB...), decimal (KB, MB, GB...), and bit units
 - 🧮 **Smart Arithmetic Support**: Same-unit operations preserve units (1 GB + 2 GB = 3 GB), mixed units convert automatically
 - 🎯 **Configurable Precision**: Eliminate scientific notation with configurable decimal precision (no more 1.23e-05 GB!)
+- 🔤 **Intuitive String Initialization**: Direct string parsing in constructors - `Storage("1.5 GB")` works out of the box
+- ⚡ **Property-Based Conversions**: Access any unit as a property - `storage.MB`, `storage.GiB`, `storage.TB`, etc.
+- 🔢 **Smart Type Conversion**: Built-in `int()` and `float()` support for seamless byte operations
 - 📝 **Flexible String Parsing**: Case-insensitive parsing with support for various formats and separators
+- 🏷️ **Multiple Aliases**: Use `Storage`, `FileSizeLib`, or `FileSize` - all functionally identical
 - 🔗 **Cross-Platform File Operations**: Get file and directory sizes using `pathlib` with platform-specific optimizations
 - ⚡ **Platform-Specific Optimizations**: Windows, Linux, and macOS-specific implementations for better performance
 - 🔒 **Type Safety**: Complete type annotations for better IDE support and code safety
@@ -31,13 +35,24 @@ pip install filesizelib
 ## Quick Start
 
 ```python
-from filesizelib import Storage, StorageUnit
+from filesizelib import Storage, StorageUnit, FileSize
 
-# Create and convert units
-size = Storage.parse("1.5 GB")              # 1.5 GB
-print(size.convert_to_gib())                # 1.396 GIB
-print(size.convert_to_mb())                 # 1500.0 MB  
-print(size.convert_to_tb())                 # 0.0015 TB
+# 🆕 NEW: Direct string initialization - no need for .parse()!
+size = Storage("1.5 GB")                    # Direct string parsing
+filesize = FileSize("2.5 TB")               # FileSize alias works identically
+
+# 🆕 NEW: Property-based conversions - access any unit as a property
+print(size.GIB)                             # 1.396 GIB  
+print(size.MB)                              # 1500.0 MB
+print(size.TB)                              # 0.0015 TB
+
+# 🆕 NEW: Smart type conversion - int() and float() return bytes
+print(int(size))                            # 1500000000 (bytes as integer)
+print(float(size))                          # 1500000000.0 (bytes as float)
+
+# Traditional methods still work perfectly
+size_classic = Storage.parse("1.5 GB")      # Classic parsing method
+converted = size_classic.convert_to_gib()   # Classic conversion method
 
 # Smart arithmetic and file operations
 file_size = Storage.get_size_from_path(".")  # Get directory size
@@ -96,18 +111,86 @@ graph TB
 
 ## Advanced Usage
 
+### New Features Overview
+
+```python
+from filesizelib import Storage, StorageUnit, FileSizeLib, FileSize
+
+# 🆕 Multiple aliases - all functionally identical
+storage = Storage("1.5 GB")
+filesizelib = FileSizeLib("1.5 GB")  
+filesize = FileSize("1.5 GB")
+print(storage == filesizelib == filesize)  # True
+
+# 🆕 Direct string initialization (no .parse() needed)
+size1 = Storage("2.5 TB")                  # Direct string parsing
+size2 = Storage("1024")                    # No unit = bytes by default
+size3 = Storage("512 MiB")                 # Binary units supported
+
+# 🆕 Property-based conversions - instant access to any unit
+data = Storage("1 GiB")
+print(data.MB)        # 1073.741824 MB (as Storage object)
+print(data.GB)        # 1.073741824 GB (as Storage object)
+print(data.BYTES)     # 1073741824 BYTES (as Storage object)
+print(data.BITS)      # 8589934592 BITS (as Storage object)
+
+# 🆕 Smart type conversion - crucial differences explained
+print(f"data.value = {data.value}")           # 1.0 (original value in original unit)
+print(f"int(data) = {int(data)}")             # 1073741824 (bytes as integer)
+print(f"float(data) = {float(data)}")         # 1073741824.0 (bytes as float)
+
+# Key difference: .value vs int()/float()
+gb_size = Storage("1.5 GB")
+print(f"gb_size.value = {gb_size.value}")     # 1.5 (original GB value)
+print(f"int(gb_size) = {int(gb_size)}")       # 1500000000 (converted to bytes)
+print(f"float(gb_size) = {float(gb_size)}")   # 1500000000.0 (converted to bytes)
+```
+
+### 🔍 Important: Understanding .value vs int() vs float()
+
+This is crucial for proper usage - these three approaches return different values:
+
+```python
+# Example with a 1.5 GB file
+file_size = Storage("1.5 GB")
+
+# 1. .value - Returns the original numeric value in the original unit
+print(f"file_size.value = {file_size.value}")        # 1.5 (the GB value)
+print(f"file_size.unit = {file_size.unit}")          # StorageUnit.GB
+
+# 2. int() - Returns total bytes as integer (for exact byte operations)
+print(f"int(file_size) = {int(file_size)}")          # 1500000000 (bytes)
+print(f"type: {type(int(file_size))}")                # <class 'int'>
+
+# 3. float() - Returns total bytes as float (for precise calculations)
+print(f"float(file_size) = {float(file_size)}")      # 1500000000.0 (bytes)
+print(f"type: {type(float(file_size))}")              # <class 'float'>
+
+# Real-world usage examples:
+# Use .value when you need the original unit value
+display_text = f"{file_size.value} {file_size.unit.name}"  # "1.5 GB"
+
+# Use int() for byte-level operations, file I/O, or exact comparisons
+bytes_needed = int(file_size)                         # Get exact byte count
+if bytes_needed > 1000000000:                         # Compare with byte threshold
+    print("Large file detected")
+
+# Use float() for mathematical calculations involving bytes
+average_byte_size = float(file_size) / 1000           # Calculate per-unit metrics
+compression_ratio = float(file_size) / float(compressed_size)
+
+# Property conversions return Storage objects (not raw numbers)
+mb_version = file_size.MB                             # Returns Storage(1500.0, MB)
+print(f"As MB object: {mb_version}")                  # "1500.0 MB"
+print(f"MB as bytes: {int(mb_version)}")              # Still 1500000000 bytes
+```
+
 ### Comprehensive Examples
 
 ```python
-from filesizelib import Storage, StorageUnit, FileSizeLib
-
-# Create storage values
+# Create storage values (traditional approach still works)
 storage1 = Storage(1, StorageUnit.KIB)
 storage2 = Storage(512, StorageUnit.BYTES)
-
-# FileSizeLib is an alias for Storage - both are functionally identical
-filesize = FileSizeLib(1024, StorageUnit.BYTES)
-print(storage1 == filesize)  # True
 
 # Smart arithmetic - same units preserve unit, mixed units convert to bytes
 same_unit_total = Storage(1, StorageUnit.GB) + Storage(2, StorageUnit.GB)  # 3 GB (preserved!)
@@ -216,46 +299,75 @@ except ZeroDivisionError as e:
 
 ### Download Time Calculator
 
-FileSizeLib is the same thing as Storage, so you can use either interchangeably.
+All aliases (Storage, FileSizeLib, FileSize) work identically - choose your preference!
 
 ```python
-from filesizelib import FileSizeLib
+from filesizelib import FileSizeLib, FileSize, Storage
 
-# File sizes
-movie = FileSizeLib.parse("1.4 GB")
-song = FileSizeLib.parse("4.5 MB")
+# 🆕 Multiple initialization approaches - all equivalent
+movie = FileSizeLib("1.4 GB")              # String initialization
+song = FileSize("4.5 MB")                  # FileSize alias
+document = Storage(250, StorageUnit.KB)     # Traditional approach
 
-# Network speeds (in bits per second)
-broadband = FileSizeLib.parse("50 Megabits")  # 50 Mbps
-fiber = FileSizeLib.parse("1 Gigabit")        # 1 Gbps
+# 🆕 Network speeds using property conversions
+broadband_mbps = Storage("50 Megabits")     # 50 Mbps
+fiber_gbps = FileSize("1 Gigabit")          # 1 Gbps
 
-# Calculate download times
-movie_time_broadband = movie / broadband  # seconds
-movie_time_fiber = movie / fiber          # seconds
+# Calculate download times using int() for precise byte calculations
+movie_bytes = int(movie)                    # Get exact byte count
+broadband_bytes_per_sec = int(broadband_mbps) # Bytes per second
 
-print(f"Movie download time:")
-print(f"  Broadband (50 Mbps): {movie_time_broadband:.1f} seconds")
-print(f"  Fiber (1 Gbps): {movie_time_fiber:.1f} seconds")
+movie_time_broadband = movie_bytes / broadband_bytes_per_sec
+movie_time_fiber = int(movie) / int(fiber_gbps)
+
+print(f"Movie download ({movie}):")
+print(f"  Broadband: {movie_time_broadband:.1f} seconds")
+print(f"  Fiber: {movie_time_fiber:.1f} seconds")
+
+# 🆕 Use properties for quick unit access
+print(f"Movie size in different units:")
+print(f"  MB: {movie.MB}")
+print(f"  MiB: {movie.MIB}") 
+print(f"  Bytes: {int(movie):,}")
 ```
 
 ### Storage Capacity Planning
 
 ```python
-from filesizelib import FileSizeLib
+from filesizelib import FileSize, Storage
 
-# Calculate total storage needs
-photos = FileSizeLib.parse("2.8 MiB") * 2000      # 2000 photos
-music = FileSizeLib.parse("4.5 MB") * 500         # 500 songs
-videos = FileSizeLib.parse("1.2 GB") * 50         # 50 videos
-documents = FileSizeLib.parse("250 KB") * 1000    # 1000 documents
+# 🆕 Mix different initialization styles as needed
+photos = FileSize("2.8 MiB") * 2000              # 2000 photos (string init)
+music = Storage("4.5 MB") * 500                  # 500 songs (string init)
+videos = Storage(1.2, StorageUnit.GB) * 50       # 50 videos (traditional)
+documents = FileSize("250 KB") * 1000            # 1000 documents (string init)
 
 total_needed = photos + music + videos + documents
 print(f"Total storage needed: {total_needed.auto_scale()}")
 
-# Available storage
-available = FileSizeLib.parse("500 GB")
+# 🆕 Available storage with property access
+available = Storage("500 GB")
 remaining = available - total_needed
-print(f"Remaining space: {remaining.auto_scale()}")
+
+print(f"Available: {available}")
+print(f"Remaining: {remaining.auto_scale()}")
+
+# 🆕 Detailed breakdown using properties and int() conversion
+print(f"\nDetailed breakdown:")
+print(f"  Photos: {photos.auto_scale()} ({int(photos):,} bytes)")
+print(f"  Music: {music.auto_scale()} ({int(music):,} bytes)")
+print(f"  Videos: {videos.auto_scale()} ({int(videos):,} bytes)")
+print(f"  Documents: {documents.auto_scale()} ({int(documents):,} bytes)")
+
+# 🆕 Usage percentage using float() for precise calculation
+usage_percent = (float(total_needed) / float(available)) * 100
+print(f"\nStorage usage: {usage_percent:.1f}%")
+
+# 🆕 Unit conversions using properties
+print(f"\nTotal needed in different units:")
+print(f"  GB: {total_needed.GB}")
+print(f"  GiB: {total_needed.GIB}")
+print(f"  TB: {total_needed.TB}")
 ```
 
 ## Development

@@ -52,20 +52,50 @@ class Storage:
     # Class variable for configurable decimal precision
     _decimal_precision: int = 20
 
-    def __init__(self, value: Union[int, float], unit: StorageUnit) -> None:
+    def __init__(self, value: Union[int, float, str], unit: StorageUnit = StorageUnit.AUTO) -> None:
         """
         Initialize the storage with a value and a unit.
 
         Args:
-            value: The numerical value of the storage.
-            unit: The unit of the storage value.
+            value: The numerical value of the storage, or a string to parse (e.g., "1MB").
+            unit: The unit of the storage value. Defaults to StorageUnit.AUTO for automatic parsing.
 
         Raises:
-            TypeError: If value is not a number or unit is not a StorageUnit.
-            ValueError: If value is negative.
+            TypeError: If value is not a number or string, or unit is not a StorageUnit.
+            ValueError: If value is negative or parsing fails.
+
+        Examples:
+            >>> storage = Storage(1024, StorageUnit.BYTES)
+            >>> print(storage)
+            1024.0 BYTES
+            
+            >>> storage = Storage("1.5 MB")  # Automatic parsing
+            >>> print(storage)
+            1.5 MB
+            
+            >>> storage = Storage("2048")  # Defaults to bytes when no unit specified
+            >>> print(storage)
+            2048.0 BYTES
         """
+        # Handle string input with automatic parsing
+        if isinstance(value, str):
+            if unit != StorageUnit.AUTO:
+                # If unit is explicitly provided with string input, ignore AUTO and use parse
+                parsed = self.parse(value, unit if unit != StorageUnit.AUTO else None)
+            else:
+                # Use automatic parsing
+                parsed = self.parse(value)
+            self.value = parsed.value
+            self.unit = parsed.unit
+            return
+        
+        # Handle numeric input
         if not isinstance(value, (int, float)):
-            raise TypeError(f"Value must be a number, got {type(value).__name__}")
+            raise TypeError(f"Value must be a number or string, got {type(value).__name__}")
+        
+        if unit == StorageUnit.AUTO:
+            # If AUTO is specified with numeric input, default to bytes
+            unit = StorageUnit.BYTES
         
         if not isinstance(unit, StorageUnit):
             raise TypeError(f"Unit must be a StorageUnit, got {type(unit).__name__}")
@@ -904,6 +934,145 @@ class Storage:
             int: Hash value based on the byte representation.
         """
         return hash(self.convert_to_bytes())
+
+    def __int__(self) -> int:
+        """
+        Convert storage to integer representation in bytes.
+
+        Returns:
+            int: The storage value converted to integer bytes.
+
+        Examples:
+            >>> storage = Storage(1.5, StorageUnit.KIB)
+            >>> print(int(storage))
+            1536
+        """
+        return int(self.convert_to_bytes())
+
+    def __float__(self) -> float:
+        """
+        Convert storage to float representation in bytes.
+
+        Returns:
+            float: The storage value as float bytes.
+
+        Examples:
+            >>> storage = Storage(1.5, StorageUnit.KIB)
+            >>> print(float(storage))
+            1536.0
+        """
+        return float(self.convert_to_bytes())
+
+    # Conversion properties for quick access
+    @property
+    def BYTES(self) -> 'Storage':
+        """Property to convert to bytes."""
+        return self.convert_to(StorageUnit.BYTES)
+    
+    @property
+    def KIB(self) -> 'Storage':
+        """Property to convert to kibibytes (KiB)."""
+        return self.convert_to_kib()
+    
+    @property
+    def MIB(self) -> 'Storage':
+        """Property to convert to mebibytes (MiB)."""
+        return self.convert_to_mib()
+    
+    @property
+    def GIB(self) -> 'Storage':
+        """Property to convert to gibibytes (GiB)."""
+        return self.convert_to_gib()
+    
+    @property
+    def TIB(self) -> 'Storage':
+        """Property to convert to tebibytes (TiB)."""
+        return self.convert_to_tib()
+    
+    @property
+    def PIB(self) -> 'Storage':
+        """Property to convert to pebibytes (PiB)."""
+        return self.convert_to_pib()
+    
+    @property
+    def EIB(self) -> 'Storage':
+        """Property to convert to exbibytes (EiB)."""
+        return self.convert_to_eib()
+    
+    @property
+    def ZIB(self) -> 'Storage':
+        """Property to convert to zebibytes (ZiB)."""
+        return self.convert_to_zib()
+    
+    @property
+    def YIB(self) -> 'Storage':
+        """Property to convert to yobibytes (YiB)."""
+        return self.convert_to_yib()
+    
+    @property
+    def KB(self) -> 'Storage':
+        """Property to convert to kilobytes (KB)."""
+        return self.convert_to_kb()
+    
+    @property
+    def MB(self) -> 'Storage':
+        """Property to convert to megabytes (MB)."""
+        return self.convert_to_mb()
+    
+    @property
+    def GB(self) -> 'Storage':
+        """Property to convert to gigabytes (GB)."""
+        return self.convert_to_gb()
+    
+    @property
+    def TB(self) -> 'Storage':
+        """Property to convert to terabytes (TB)."""
+        return self.convert_to_tb()
+    
+    @property
+    def PB(self) -> 'Storage':
+        """Property to convert to petabytes (PB)."""
+        return self.convert_to_pb()
+    
+    @property
+    def EB(self) -> 'Storage':
+        """Property to convert to exabytes (EB)."""
+        return self.convert_to_eb()
+    
+    @property
+    def ZB(self) -> 'Storage':
+        """Property to convert to zettabytes (ZB)."""
+        return self.convert_to_zb()
+    
+    @property
+    def YB(self) -> 'Storage':
+        """Property to convert to yottabytes (YB)."""
+        return self.convert_to_yb()
+    
+    @property
+    def BITS(self) -> 'Storage':
+        """Property to convert to bits."""
+        return self.convert_to_bits()
+    
+    @property
+    def KILOBITS(self) -> 'Storage':
+        """Property to convert to kilobits."""
+        return self.convert_to_kilobits()
+    
+    @property
+    def MEGABITS(self) -> 'Storage':
+        """Property to convert to megabits."""
+        return self.convert_to_megabits()
+    
+    @property
+    def GIGABITS(self) -> 'Storage':
+        """Property to convert to gigabits."""
+        return self.convert_to_gigabits()
+    
+    @property
+    def TERABITS(self) -> 'Storage':
+        """Property to convert to terabits."""
+        return self.convert_to_terabits()
 
     # String representations
     def __str__(self) -> str:

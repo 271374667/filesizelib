@@ -260,8 +260,9 @@ class TestStorageUnitEdgeCases:
         binary_units = StorageUnit.get_binary_units()
         decimal_units = StorageUnit.get_decimal_units()
         bit_units = StorageUnit.get_bit_units()
+        special_units = StorageUnit.get_special_units()
         
-        classified_units = binary_units | decimal_units | bit_units
+        classified_units = binary_units | decimal_units | bit_units | special_units
         
         # All units should be classified
         assert classified_units == all_units

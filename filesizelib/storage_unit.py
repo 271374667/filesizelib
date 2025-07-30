@@ -28,6 +28,9 @@ class StorageUnit(Enum):
     Each enum value represents the number of bytes in one unit.
     """
     
+    # Special units
+    AUTO = -1  # Special value for automatic parsing
+    
     # Byte units
     BYTES = 1
     BYTE = 1  # Alias for BYTES
@@ -249,6 +252,16 @@ class StorageUnit(Enum):
             cls.TERABITS, cls.PETABITS, cls.EXABITS, 
             cls.ZETTABITS, cls.YOTTABITS
         }
+    
+    @classmethod  
+    def get_special_units(cls) -> Set['StorageUnit']:
+        """
+        Get a set of special storage units (e.g., AUTO).
+        
+        Returns:
+            Set[StorageUnit]: Set of special storage units.
+        """
+        return {cls.AUTO}
     
     def is_binary(self) -> bool:
         """

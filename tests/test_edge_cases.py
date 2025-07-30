@@ -107,15 +107,15 @@ class TestErrorConditions:
     
     def test_invalid_type_initialization(self):
         """Test that invalid types raise TypeError."""
-        # Invalid value types
-        with pytest.raises(TypeError, match="Value must be a number"):
-            Storage("1", StorageUnit.BYTES)
-        
-        with pytest.raises(TypeError, match="Value must be a number"):
+        # Invalid value types (strings are now supported)
+        with pytest.raises(TypeError, match="Value must be a number or string"):
             Storage(None, StorageUnit.BYTES)
         
-        with pytest.raises(TypeError, match="Value must be a number"):
+        with pytest.raises(TypeError, match="Value must be a number or string"):
             Storage([], StorageUnit.BYTES)
+        
+        with pytest.raises(TypeError, match="Value must be a number or string"):
+            Storage({}, StorageUnit.BYTES)
         
         # Invalid unit types
         with pytest.raises(TypeError, match="Unit must be a StorageUnit"):

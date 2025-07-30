@@ -15,16 +15,23 @@ Key Features:
 - Platform-specific optimizations
 
 Example:
-    >>> from filesizelib import Storage, StorageUnit, FileSizeLib
+    >>> from filesizelib import Storage, StorageUnit, FileSizeLib, FileSize
     >>> size = Storage(1, StorageUnit.KIB)
     >>> print(size.convert_to_bytes())
     1024
-    >>> parsed = Storage.parse("1.5 MB")
+    >>> # New: String parsing in constructor
+    >>> parsed = Storage("1.5 MB")
     >>> print(parsed)
     1.5 MB
-    >>> # FileSizeLib is an alias for Storage
-    >>> filesize = FileSizeLib(1024, StorageUnit.BYTES)
-    >>> print(filesize.convert_to_kib())
+    >>> # New: Property access for conversions
+    >>> print(size.MB)
+    0.001024 MB
+    >>> # New: int/float conversion
+    >>> print(int(size))
+    1024
+    >>> # FileSizeLib and FileSize are aliases for Storage
+    >>> filesize = FileSize(1024, StorageUnit.BYTES)
+    >>> print(filesize.KIB)
     1.0 KIB
     >>> # Configure decimal precision
     >>> Storage.set_decimal_precision(10)
@@ -41,12 +48,16 @@ from .platform_storage import WindowsStorage, LinuxStorage, MacStorage
 # Both classes are functionally identical
 FileSizeLib = Storage
 
-__version__ = "0.6.14"
+# FileSize is another alias for Storage for convenience
+FileSize = Storage
+
+__version__ = "0.11.4"
 __author__ = "PythonImporter"
 __all__ = [
     "Storage",
     "StorageUnit", 
     "FileSizeLib",  # Alias for Storage
+    "FileSize",     # Another alias for Storage
     "WindowsStorage",
     "LinuxStorage", 
     "MacStorage"

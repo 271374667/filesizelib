@@ -1,12 +1,16 @@
 # Quick Start
 
-This 5-minute tutorial will quickly introduce you to FileSizeLib's core features.
+This 5-minute tutorial will quickly introduce you to FileSizeLib's core features, including the latest enhancements.
 
 ## 🎯 Goals
 
 After completing this tutorial, you'll be able to:
 
-- [x] Create Storage objects
+- [x] Create Storage objects using multiple approaches
+- [x] Use the new FileSize alias and direct string initialization
+- [x] Access conversions via properties (storage.MB, storage.GiB, etc.)
+- [x] Use int() and float() magic methods for byte operations
+- [x] Understand the differences between .value, int(), and float()
 - [x] Perform basic arithmetic operations
 - [x] Use convenient conversion methods
 - [x] Parse string-formatted storage sizes
@@ -14,23 +18,35 @@ After completing this tutorial, you'll be able to:
 
 ## 💾 1. Creating Storage Objects
 
-Storage (and its alias FileSizeLib) is FileSizeLib's core class, representing a storage size value:
+Storage has multiple aliases and initialization methods - choose what feels most natural!
 
 ```python
-from filesizelib import Storage, StorageUnit, FileSizeLib
+from filesizelib import Storage, StorageUnit, FileSizeLib, FileSize
 
-# Method 1: Using numeric values and unit enums
-file_size = Storage(1.5, StorageUnit.GB)
-photo_size = Storage(2.5, StorageUnit.MIB)
+# 🆕 NEW: Multiple aliases - all functionally identical
+storage_obj = Storage("1.5 GB")           # Main class
+filesizelib_obj = FileSizeLib("1.5 GB")   # Original alias
+filesize_obj = FileSize("1.5 GB")         # 🆕 New alias
 
-# Method 2: Using convenient string parsing
-video_size = Storage.parse("4.2 GB")
-music_size = Storage.parse("128 MB")
+print(storage_obj == filesizelib_obj == filesize_obj)  # True
 
-print(f"File size: {file_size}")    # 1.5 GB
-print(f"Photo size: {photo_size}")  # 2.5 MIB
-print(f"Video size: {video_size}")  # 4.2 GB
-print(f"Music size: {music_size}")  # 128.0 MB
+# Method 1: 🆕 NEW - Direct string initialization (recommended!)
+file_size = Storage("1.5 GB")             # No .parse() needed!
+photo_size = FileSize("2.5 MiB")          # Works with any alias
+document_size = Storage("500")             # No unit = bytes
+
+# Method 2: Traditional numeric values and unit enums
+video_size = Storage(4.2, StorageUnit.GB) # Classic approach
+music_size = FileSizeLib(128, StorageUnit.MB)
+
+# Method 3: Traditional string parsing (still works!)
+legacy_size = Storage.parse("1 TB")       # .parse() method
+
+print(f"File size: {file_size}")          # 1.5 GB
+print(f"Photo size: {photo_size}")        # 2.5 MIB
+print(f"Document: {document_size}")       # 500 BYTES
+print(f"Video size: {video_size}")        # 4.2 GB
+print(f"Music size: {music_size}")        # 128.0 MB
 ```
 
 ## 🧮 2. Arithmetic Operations
@@ -65,59 +81,103 @@ print(f"Download time: {download_time:.1f} seconds")  # 420.0 seconds
 
 ## 🔄 3. Unit Conversion
 
-### Using Convenient Methods
+### 🆕 NEW: Property-Based Conversions (Recommended!)
+
+The easiest way to convert units - just access them as properties:
 
 ```python
-large_file = Storage(1.5, StorageUnit.GB)
+large_file = Storage("1.5 GB")  # Using string initialization
 
-# Binary unit conversions
-print(f"Convert to MiB: {large_file.convert_to_mib()}")  # 1430.51 MiB
-print(f"Convert to KiB: {large_file.convert_to_kib()}")  # 1465149.61 KiB
+# 🆕 Binary unit properties - instant access!
+print(f"MiB: {large_file.MIB}")    # 1430.51 MiB
+print(f"KiB: {large_file.KIB}")    # 1465149.61 KiB
+print(f"GiB: {large_file.GIB}")    # 1.396 GiB
 
-# Decimal unit conversions  
-print(f"Convert to MB: {large_file.convert_to_mb()}")    # 1500.0 MB
-print(f"Convert to KB: {large_file.convert_to_kb()}")    # 1500000.0 KB
+# 🆕 Decimal unit properties  
+print(f"MB: {large_file.MB}")      # 1500.0 MB
+print(f"KB: {large_file.KB}")      # 1500000.0 KB
+print(f"TB: {large_file.TB}")      # 0.0015 TB
 
-# Bit unit conversions
-print(f"Convert to bits: {large_file.convert_to_bits()}")  # 12000000000.0 BITS
-print(f"Convert to megabits: {large_file.convert_to_megabits()}")  # 12000.0 MEGABITS
+# 🆕 Bit unit properties
+print(f"Bits: {large_file.BITS}")             # 12000000000.0 BITS
+print(f"Megabits: {large_file.MEGABITS}")     # 12000.0 MEGABITS
+print(f"Gigabits: {large_file.GIGABITS}")     # 12.0 GIGABITS
+
+# 🆕 Property chaining works too!
+result = Storage("1 GiB").MIB.KIB
+print(f"Chained conversion: {result}")        # 1048576.0 KIB
 ```
 
-### Traditional Method
+### Traditional Methods (Still Available)
 
 ```python
+# Using convert_to_* methods
+print(f"Method call: {large_file.convert_to_mib()}")  # 1430.51 MiB
+
 # Using convert_to method
 traditional = large_file.convert_to(StorageUnit.MIB)
-print(f"Traditional conversion: {traditional}")  # 1430.51 MIB
+print(f"Traditional: {traditional}")                  # 1430.51 MIB
 
-# Both methods produce identical results
-assert large_file.convert_to_mib() == traditional
+# All approaches produce identical results
+assert large_file.MIB == large_file.convert_to_mib() == traditional
+```
+
+### 🔍 Understanding .value vs int() vs float()
+
+**Critical difference** - these return different values:
+
+```python
+size = Storage("1.5 GB")
+
+# .value - Returns original value in original unit
+print(f"size.value = {size.value}")         # 1.5 (GB value)
+print(f"size.unit = {size.unit}")           # StorageUnit.GB
+
+# int() - Returns total bytes as integer  
+print(f"int(size) = {int(size)}")           # 1500000000 (bytes)
+
+# float() - Returns total bytes as float
+print(f"float(size) = {float(size)}")       # 1500000000.0 (bytes)
+
+# Properties return Storage objects (not raw numbers)
+print(f"size.MB = {size.MB}")               # 1500.0 MB (Storage object)
+print(f"int(size.MB) = {int(size.MB)}")     # 1500000000 (still bytes!)
 ```
 
 ## 📝 4. String Parsing
 
-FileSizeLib supports multiple string formats with FileSizeLib alias:
+🆕 **Major improvement**: Direct string initialization makes parsing effortless!
 
 ```python
-# Basic formats (Storage and FileSizeLib work identically)
-size1 = Storage.parse("1.5 GB")
-size2 = FileSizeLib.parse("2.5TB")         # FileSizeLib alias
-size3 = Storage.parse("512 mb")         # Lowercase
+# 🆕 NEW: Direct initialization (recommended approach)
+size1 = Storage("1.5 GB")              # No .parse() needed!
+size2 = FileSize("2.5TB")              # Works with all aliases
+size3 = FileSizeLib("512 mb")          # Case insensitive
 
-# Different decimal separators
-size4 = Storage.parse("1,5 GB")         # European format (comma)
-size5 = Storage.parse("2.5 GB")         # US format (dot)
+# 🆕 Different decimal separators work directly
+size4 = Storage("1,5 GB")              # European format (comma)
+size5 = FileSize("2.5 GB")             # US format (dot)
 
-# Full unit names
-size6 = Storage.parse("1 gigabyte")
-size7 = Storage.parse("500 megabytes")
-size8 = Storage.parse("1 kibibyte")
+# 🆕 Full unit names in constructors
+size6 = Storage("1 gigabyte")
+size7 = FileSize("500 megabytes")  
+size8 = Storage("1 kibibyte")
 
-# Short forms
-size9 = Storage.parse("1 g")            # Single letter
-size10 = Storage.parse("500 m")
+# 🆕 Short forms work directly
+size9 = Storage("1 g")                 # Single letter
+size10 = FileSize("500 m")
 
-print("All formats parsed correctly!")
+# 🆕 No unit defaults to bytes
+size11 = Storage("1024")               # Automatically BYTES
+
+print("All formats parsed correctly using direct initialization!")
+
+# Traditional .parse() method still works
+legacy1 = Storage.parse("1.5 GB")     # Old way
+legacy2 = FileSizeLib.parse("2TB")    # Still supported
+
+# Both approaches are identical
+assert Storage("1 GB") == Storage.parse("1 GB")
 ```
 
 ## 📁 5. File Operations
@@ -205,59 +265,89 @@ print(f"Total size: {total.auto_scale()}")
 
 ## 💡 Real-World Example
 
-Let's look at a complete real-world application scenario showcasing new features:
+Complete scenario showcasing all the new features together:
 
 ```python
 def analyze_media_library(photos_count, video_count):
-    """Analyze media library storage requirements with FileSizeLib"""
+    """🆕 Enhanced media library analysis using new features"""
     
-    # Estimate sizes using FileSizeLib alias
-    avg_photo = FileSizeLib.parse("2.5 MiB")
-    avg_video = FileSizeLib.parse("500 MB")
+    # 🆕 Direct string initialization - no .parse() needed!
+    avg_photo = FileSize("2.5 MiB")         # Using FileSize alias
+    avg_video = Storage("500 MB")           # Using Storage with strings
     
     # Same-unit arithmetic preserves units
-    if photos_count > 1:
-        photos_total = avg_photo * photos_count  # Still in MiB
-    else:
-        photos_total = avg_photo
+    photos_total = avg_photo * photos_count if photos_count > 1 else avg_photo
+    videos_total = avg_video * video_count
     
-    videos_total = avg_video * video_count  # Still in MB
-    
-    # Mixed units will convert to bytes
+    # Mixed units convert to bytes
     total_needed = photos_total + videos_total
     
-    # Available storage
-    available = Storage.parse("1 TB")
+    # 🆕 Available storage using direct initialization
+    available = Storage("1 TB")
     remaining = available - total_needed
     
-    # Analysis results
+    # 🆕 Analysis results using new features
     print(f"📸 {photos_count} photos: {photos_total.auto_scale()}")
     print(f"🎬 {video_count} videos: {videos_total.auto_scale()}")
     print(f"📦 Total needed: {total_needed.auto_scale()}")
-    print(f"💾 Available space: {available}")
-    print(f"✅ Remaining space: {remaining.auto_scale()}")
     
-    if remaining.convert_to_bytes() > 0:
-        usage_percent = (total_needed / available) * 100
+    # 🆕 Property-based conversions for detailed breakdown
+    print(f"📊 Total needed breakdown:")
+    print(f"   GB: {total_needed.GB}")
+    print(f"   GiB: {total_needed.GIB}")
+    print(f"   Bytes: {int(total_needed):,}")    # 🆕 int() for exact bytes
+    
+    print(f"💾 Available: {available}")
+    print(f"✅ Remaining: {remaining.auto_scale()}")
+    
+    # 🆕 Usage calculation using float() for precision
+    if int(remaining) > 0:                        # 🆕 int() for byte check
+        usage_percent = (float(total_needed) / float(available)) * 100
         print(f"📊 Usage: {usage_percent:.1f}%")
+        
+        # 🆕 Different unit representations using properties
+        print(f"📈 Usage in different units:")
+        print(f"   {total_needed.GB.value:.1f} / {available.GB.value:.1f} GB")
+        print(f"   {total_needed.GIB.value:.1f} / {available.GIB.value:.1f} GiB")
     else:
         print("⚠️  Insufficient storage space!")
+    
+    # 🆕 Return detailed info using all new features
+    return {
+        'total_needed': total_needed,
+        'total_bytes': int(total_needed),         # 🆕 Exact byte count
+        'total_gb': total_needed.GB.value,       # 🆕 GB value only
+        'available': available,
+        'remaining': remaining,
+        'usage_percent': (float(total_needed) / float(available)) * 100
+    }
 
-# Run analysis
-analyze_media_library(photos_count=1000, video_count=50)
+# Run enhanced analysis
+result = analyze_media_library(photos_count=1000, video_count=50)
+
+# 🆕 Use the returned data with new features
+print(f"\n🔍 Advanced analysis:")
+print(f"Exact byte count: {result['total_bytes']:,}")
+print(f"GB value only: {result['total_gb']:.2f}")
+print(f"Usage percentage: {result['usage_percent']:.2f}%")
 ```
 
 ## 🎉 Congratulations!
 
-You've mastered FileSizeLib's core features! Now you can:
+You've mastered FileSizeLib's core features, including all the latest enhancements! Now you can:
 
-- ✅ Create and manipulate Storage/FileSizeLib objects
+- ✅ Create objects using multiple aliases (Storage, FileSizeLib, FileSize)
+- ✅ 🆕 Use direct string initialization - `Storage("1.5 GB")`
+- ✅ 🆕 Access any unit as a property - `storage.MB`, `storage.GiB`, etc.
+- ✅ 🆕 Use int() and float() for precise byte operations
+- ✅ 🆕 Understand the critical differences between .value, int(), and float()
 - ✅ Perform smart arithmetic with unit preservation
 - ✅ Control decimal precision and eliminate scientific notation
-- ✅ Use convenient conversion methods
-- ✅ Parse multiple string formats
+- ✅ Use convenient conversion methods (both old and new)
+- ✅ Parse multiple string formats with flexible approaches
 - ✅ Handle file and directory sizes
 - ✅ Use smart scaling and method chaining
+- ✅ 🆕 Chain property conversions for complex operations
 
 ## 📚 Next Steps
 

@@ -62,8 +62,8 @@ class TestStorageInitialization:
     
     def test_initialization_error_invalid_value_type(self):
         """Test that invalid value type raises TypeError."""
-        with pytest.raises(TypeError, match="Value must be a number"):
-            Storage("invalid", StorageUnit.BYTES)
+        with pytest.raises(TypeError, match="Value must be a number or string"):
+            Storage([], StorageUnit.BYTES)
     
     def test_initialization_error_invalid_unit_type(self):
         """Test that invalid unit type raises TypeError."""

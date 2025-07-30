@@ -1,6 +1,6 @@
 [project]
 name = "filesizelib"
-version = "0.6.14"
+version = "0.11.4"
 description = "A unified storage unit library for Python with cross-platform file size support"
 readme = "README.md"
 requires-python = ">=3.9"

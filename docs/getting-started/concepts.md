@@ -1,6 +1,6 @@
 # Basic Concepts
 
-Understanding the core concepts behind FileSizeLib will help you use the library more effectively.
+Understanding the core concepts behind FileSizeLib will help you use the library more effectively. This guide covers both fundamental concepts and the latest feature enhancements.
 
 ## 🧠 Storage Units Overview
 
@@ -366,6 +366,161 @@ print(f"Current: {Storage.get_decimal_precision()}")  # 5
 
 # Reset to default
 Storage.set_decimal_precision(20)
+```
+
+## 🆕 New Features Guide
+
+FileSizeLib has been enhanced with powerful new features that make it even more intuitive and flexible.
+
+### Multiple Aliases
+
+Choose the class name that feels most natural to you - they're all functionally identical:
+
+```python
+from filesizelib import Storage, FileSizeLib, FileSize
+
+# All of these are exactly the same
+storage = Storage("1.5 GB")
+filesizelib = FileSizeLib("1.5 GB")  
+filesize = FileSize("1.5 GB")          # 🆕 NEW
+
+print(storage == filesizelib == filesize)  # True
+```
+
+### Direct String Initialization
+
+**Major improvement**: No more `.parse()` calls needed!
+
+```python
+# 🆕 NEW: Direct string initialization (recommended)
+size1 = Storage("1.5 GB")              # Clean and simple
+size2 = FileSize("2048")                # No unit = bytes
+size3 = Storage("1,5 GB")               # European decimal separator
+
+# 🔄 Traditional approach still works
+size4 = Storage.parse("1.5 GB")        # Old way
+size5 = Storage(1.5, StorageUnit.GB)   # Numeric way
+
+# All approaches are equivalent
+assert Storage("1 GB") == Storage.parse("1 GB") == Storage(1, StorageUnit.GB)
+```
+
+### Property-Based Conversions
+
+**Game changer**: Access any unit as a simple property!
+
+```python
+file_size = Storage("1.5 GB")
+
+# 🆕 Property access - incredibly convenient
+print(file_size.MB)          # 1500.0 MB
+print(file_size.GIB)         # 1.396 GIB
+print(file_size.BITS)        # 12000000000.0 BITS
+print(file_size.BYTES)       # 1500000000 BYTES
+
+# 🆕 Property chaining works too!
+result = Storage("1 TiB").GIB.MIB
+print(result)                 # 1048576.0 MIB
+
+# 🔄 Traditional methods still available
+print(file_size.convert_to_mb())  # Same as file_size.MB
+```
+
+### Smart Type Conversion
+
+**Critical feature**: Built-in `int()` and `float()` support for byte operations.
+
+```python
+storage = Storage("1.5 GB")
+
+# 🆕 Magic methods return bytes
+bytes_as_int = int(storage)     # 1500000000 (integer bytes)
+bytes_as_float = float(storage) # 1500000000.0 (float bytes)
+
+# Original value and unit unchanged
+print(storage.value)            # 1.5 (original value)
+print(storage.unit)             # StorageUnit.GB (original unit)
+```
+
+### 🔍 Critical Concept: .value vs int() vs float()
+
+**This is the most important concept to understand** - these three approaches return completely different values:
+
+```python
+file_size = Storage("1.5 GB")
+
+# 1. .value - Returns the ORIGINAL numeric value in the ORIGINAL unit
+original_value = file_size.value        # 1.5 (the GB value)
+original_unit = file_size.unit          # StorageUnit.GB
+print(f"Original: {original_value} {original_unit.name}")  # "1.5 GB"
+
+# 2. int() - Returns TOTAL BYTES as integer (for exact operations)
+total_bytes_int = int(file_size)        # 1500000000 (bytes as int)
+print(f"Bytes (int): {total_bytes_int}")
+
+# 3. float() - Returns TOTAL BYTES as float (for calculations)
+total_bytes_float = float(file_size)    # 1500000000.0 (bytes as float)
+print(f"Bytes (float): {total_bytes_float}")
+
+# Real-world usage examples:
+
+# Use .value for display purposes
+display_text = f"{file_size.value} {file_size.unit.name}"  # "1.5 GB"
+
+# Use int() for exact byte operations, file I/O, comparisons
+if int(file_size) > 1000000000:  # Compare exact bytes
+    print("Large file detected")
+
+# Use float() for mathematical calculations
+compression_ratio = float(original_file) / float(compressed_file)
+average_size = float(total_size) / file_count
+
+# Properties return Storage objects (not raw numbers!)
+mb_storage = file_size.MB               # Returns Storage(1500.0, MB)
+mb_bytes = int(file_size.MB)            # Still 1500000000 bytes!
+mb_display = file_size.MB.value         # 1500.0 (MB value only)
+```
+
+### Common Patterns with New Features
+
+```python
+# Pattern 1: Quick byte operations
+file_sizes = [Storage("1.5 GB"), FileSize("2.5 GB"), Storage("500 MB")]
+total_bytes = sum(int(size) for size in file_sizes)  # Exact byte sum
+print(f"Total: {total_bytes:,} bytes")
+
+# Pattern 2: Unit-specific calculations  
+gb_sizes = [Storage("1.5 GB"), Storage("2.0 GB"), Storage("0.5 GB")]
+total_gb = sum(size.value for size in gb_sizes)      # Sum GB values only
+print(f"Total: {total_gb} GB")
+
+# Pattern 3: Mixed unit operations with properties
+large_file = Storage("1.5 TB")
+print(f"Size breakdown:")
+print(f"  TB: {large_file.TB}")
+print(f"  TiB: {large_file.TIB}")  
+print(f"  GB: {large_file.GB}")
+print(f"  Bytes: {int(large_file):,}")
+
+# Pattern 4: Chaining with type conversion
+result = int(FileSize("1 GiB").MB)      # 1073741824 bytes
+ratio = float(Storage("2 GB")) / float(Storage("1 GB"))  # 2.0
+```
+
+### Migration Guide
+
+If you're upgrading from an older version:
+
+```python
+# ✅ All existing code continues to work unchanged
+old_style = Storage(1.5, StorageUnit.GB)
+parsed = Storage.parse("1.5 GB")
+converted = old_style.convert_to_mb()
+
+# 🆕 But you can now use simpler approaches
+new_style = Storage("1.5 GB")           # Direct initialization
+quick_convert = new_style.MB            # Property conversion
+exact_bytes = int(new_style)            # Magic method
 ```
 
 ## 📚 Next Steps

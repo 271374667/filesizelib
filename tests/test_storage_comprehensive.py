@@ -430,12 +430,14 @@ class TestStorageInternalMethods:
         binary_units = StorageUnit.get_binary_units()
         decimal_units = StorageUnit.get_decimal_units()
         bit_units = StorageUnit.get_bit_units()
+        special_units = StorageUnit.get_special_units()
         
         # Every unit should be classified exactly once
-        classified_units = binary_units | decimal_units | bit_units
+        classified_units = binary_units | decimal_units | bit_units | special_units
         assert classified_units == all_units
         
         # No unit should be in multiple categories
         assert binary_units & decimal_units == set()
         assert binary_units & bit_units == set()
         assert decimal_units & bit_units == set()
+        assert special_units & (binary_units | decimal_units | bit_units) == set()
