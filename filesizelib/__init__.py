@@ -51,7 +51,7 @@ FileSizeLib = Storage
 # FileSize is another alias for Storage for convenience
 FileSize = Storage
 
-__version__ = "0.11.4"
+__version__ = "0.12.1"
 __author__ = "PythonImporter"
 __all__ = [
     "Storage",
