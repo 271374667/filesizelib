@@ -46,7 +46,7 @@ class TestBoundaryValues:
         large_storage = Storage(large_value, StorageUnit.BYTES)
         
         assert large_storage.value == large_value
-        assert large_storage.convert_to_bytes() == large_value
+        assert float(large_storage.convert_to_bytes()) == large_value
         
         # Arithmetic should work
         doubled = large_storage * 2
@@ -62,7 +62,7 @@ class TestBoundaryValues:
         small_storage = Storage(small_value, StorageUnit.BYTES)
         
         assert small_storage.value == small_value
-        assert small_storage.convert_to_bytes() == small_value
+        assert float(small_storage.convert_to_bytes()) == small_value
         
         # Should maintain precision
         doubled = small_storage * 2
@@ -83,7 +83,7 @@ class TestBoundaryValues:
         """Test handling of fractional bit values."""
         # 1 bit = 0.125 bytes
         quarter_bit = Storage(0.25, StorageUnit.BITS)
-        assert quarter_bit.convert_to_bytes() == 0.03125
+        assert float(quarter_bit.convert_to_bytes()) == 0.03125
         
         # Should handle fractional operations
         doubled = quarter_bit * 2
@@ -515,4 +515,4 @@ class TestSpecialValues:
         
         # Should handle reasonable precision
         assert storage.value == precise_value
-        assert storage.convert_to_bytes() == precise_value
+        assert float(storage.convert_to_bytes()) == precise_value

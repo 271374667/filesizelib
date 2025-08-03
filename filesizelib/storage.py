@@ -8,9 +8,13 @@ conversion, arithmetic operations, and parsing functionality.
 import math
 import re
 import platform
+from decimal import Decimal, getcontext
 from pathlib import Path
 from typing import Union, Optional, overload
 from .storage_unit import StorageUnit
+
+# Set high precision for decimal operations
+getcontext().prec = 50
 
 
 class Storage:
@@ -23,11 +27,22 @@ class Storage:
     and parsing storage values from strings.
 
     Attributes:
-        value (float): The numerical value of the storage.
+        value (float): The numerical value of the storage as float (backward compatibility).
+        decimal_value (Decimal): The exact decimal value with full precision.
         unit (StorageUnit): The unit of the storage value.
 
     Class Attributes:
         _decimal_precision (int): Maximum number of decimal places to display (default: 20).
+
+    Decimal Precision:
+        The Storage class uses Python's Decimal module internally to provide exact
+        decimal precision, eliminating floating-point rounding errors. This ensures
+        that values like "6.682" are stored and displayed exactly as "6.682" rather
+        than "6.68200000000000038369".
+        
+        - value property: Returns float for backward compatibility
+        - decimal_value property: Returns exact Decimal for precision-critical applications
+        - String representations use exact decimal formatting
 
     Examples:
         >>> storage = Storage(1, StorageUnit.KIB)
@@ -42,9 +57,27 @@ class Storage:
         >>> print(parsed)
         1.5 MB
         
-        >>> # Configure decimal precision
+        >>> # Exact decimal precision examples
+        >>> precise = Storage("6.682", StorageUnit.MB)
+        >>> print(precise)  # Exact output: 6.682 MB
+        6.682 MB
+        >>> precise.decimal_value  # Exact decimal
+        Decimal('6.682')
+        >>> precise.value  # Float for compatibility
+        6.682
+        
+        >>> # Decimal arithmetic maintains precision
+        >>> a = Storage("1.1", StorageUnit.GB)
+        >>> b = Storage("2.2", StorageUnit.GB)
+        >>> result = a + b
+        >>> print(result)  # Exact: 3.3 GB
+        3.3 GB
+        >>> result.decimal_value
+        Decimal('3.3')
+        
+        >>> # Configure decimal precision for display
         >>> Storage.set_decimal_precision(10)
-        >>> small = Storage(0.000123456789012345, StorageUnit.GB)
+        >>> small = Storage("0.000123456789012345", StorageUnit.GB)
         >>> print(small)  # Will show up to 10 decimal places
         0.0001234567890 GB
     """
@@ -52,12 +85,13 @@ class Storage:
     # Class variable for configurable decimal precision
     _decimal_precision: int = 20
 
-    def __init__(self, value: Union[int, float, str], unit: StorageUnit = StorageUnit.AUTO) -> None:
+    def __init__(self, value: Union[int, float, str, Decimal], unit: StorageUnit = StorageUnit.AUTO) -> None:
         """
         Initialize the storage with a value and a unit.
 
         Args:
             value: The numerical value of the storage, or a string to parse (e.g., "1MB").
+                  Can be int, float, str, or Decimal for exact precision.
             unit: The unit of the storage value. Defaults to StorageUnit.AUTO for automatic parsing.
 
         Raises:
@@ -67,7 +101,7 @@ class Storage:
         Examples:
             >>> storage = Storage(1024, StorageUnit.BYTES)
             >>> print(storage)
-            1024.0 BYTES
+            1024 BYTES
             
             >>> storage = Storage("1.5 MB")  # Automatic parsing
             >>> print(storage)
@@ -75,7 +109,15 @@ class Storage:
             
             >>> storage = Storage("2048")  # Defaults to bytes when no unit specified
             >>> print(storage)
-            2048.0 BYTES
+            2048 BYTES
+            
+            >>> # Using Decimal for exact precision
+            >>> from decimal import Decimal
+            >>> storage = Storage(Decimal("6.682"), StorageUnit.MB)
+            >>> print(storage)
+            6.682 MB
+            >>> storage.decimal_value
+            Decimal('6.682')
         """
         # Handle string input with automatic parsing
         if isinstance(value, str):
@@ -85,12 +127,12 @@ class Storage:
             else:
                 # Use automatic parsing
                 parsed = self.parse(value)
-            self.value = parsed.value
+            self._decimal_value = parsed._decimal_value
             self.unit = parsed.unit
             return
         
         # Handle numeric input
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, (int, float, Decimal)):
             raise TypeError(f"Value must be a number or string, got {type(value).__name__}")
         
         if unit == StorageUnit.AUTO:
@@ -103,11 +145,79 @@ class Storage:
         if value < 0:
             raise ValueError("Storage value cannot be negative")
         
-        if not math.isfinite(value):
-            raise ValueError("Storage value cannot be infinity or NaN")
+        # Convert to Decimal for exact precision
+        if isinstance(value, float):
+            if not math.isfinite(value):
+                raise ValueError("Storage value cannot be infinity or NaN")
+            # Convert float to string first to avoid precision loss
+            self._decimal_value = Decimal(str(value))
+        elif isinstance(value, (int, Decimal)):
+            self._decimal_value = Decimal(value)
+        else:
+            # This shouldn't happen due to the type check above
+            self._decimal_value = Decimal(str(value))
         
-        self.value = float(value)
         self.unit = unit
+
+    @property
+    def value(self) -> float:
+        """
+        Get the storage value as a float for backward compatibility.
+        
+        This property maintains backward compatibility with existing code that expects
+        float values. For applications requiring exact decimal precision, use the
+        decimal_value property instead.
+        
+        Returns:
+            float: The storage value converted to float.
+            
+        Note:
+            Converting to float may introduce small precision errors for values that
+            cannot be exactly represented in IEEE 754 floating-point format.
+            Use decimal_value for exact precision.
+            
+        Examples:
+            >>> storage = Storage("6.682", StorageUnit.MB)
+            >>> storage.value  # Returns float (may have tiny precision loss)
+            6.682
+            >>> storage.decimal_value  # Returns exact Decimal
+            Decimal('6.682')
+        """
+        return float(self._decimal_value)
+    
+    @property 
+    def decimal_value(self) -> Decimal:
+        """
+        Get the exact decimal value with full precision.
+        
+        This property provides access to the internal Decimal representation that
+        maintains exact precision for all decimal operations. Use this when you
+        need guaranteed precision without any floating-point rounding errors.
+        
+        Returns:
+            Decimal: The exact decimal value without precision loss.
+            
+        Examples:
+            >>> storage = Storage("6.682", StorageUnit.MB)
+            >>> storage.decimal_value
+            Decimal('6.682')
+            >>> 
+            >>> # Decimal arithmetic maintains exact precision
+            >>> a = Storage("1.1", StorageUnit.GB)
+            >>> b = Storage("2.2", StorageUnit.GB)
+            >>> (a + b).decimal_value
+            Decimal('3.3')
+            >>>
+            >>> # Compare with float precision
+            >>> (a + b).value  # May show: 3.3000000000000003
+            3.3
+            
+        Note:
+            This is the recommended property for financial calculations,
+            scientific applications, or any context where exact decimal
+            precision is required.
+        """
+        return self._decimal_value
 
     @classmethod
     def set_decimal_precision(cls, precision: int) -> None:
@@ -155,31 +265,45 @@ class Storage:
         """
         return cls._decimal_precision
     
-    def _format_value(self, value: float) -> str:
+    def _format_value(self, value: Decimal) -> str:
         """
-        Format a float value avoiding scientific notation and respecting decimal precision.
+        Format a Decimal value avoiding scientific notation and respecting decimal precision.
         
         Args:
-            value: The float value to format.
+            value: The Decimal value to format.
             
         Returns:
             str: The formatted value as a string.
         """
+        # Handle special case of zero precision
+        if self._decimal_precision == 0:
+            # Round to nearest integer
+            return str(int(value.quantize(Decimal('1'))))
+        
         # Handle integer values
-        if value == int(value):
+        if value % 1 == 0:
             return str(int(value))
         
-        # Format with fixed decimal places, then remove trailing zeros
-        formatted = f"{value:.{self._decimal_precision}f}"
+        # Force normal notation (no scientific notation)
+        # Create a context that doesn't use scientific notation
+        formatted = format(value, 'f')
         
-        # Remove trailing zeros after decimal point
+        # If the result is too long, apply precision limit
         if '.' in formatted:
+            integer_part, decimal_part = formatted.split('.')
+            if len(decimal_part) > self._decimal_precision:
+                # Use quantize to limit decimal places
+                quantizer = Decimal('0.1') ** self._decimal_precision
+                value = value.quantize(quantizer)
+                formatted = format(value, 'f')
+            
+            # Remove trailing zeros
             formatted = formatted.rstrip('0').rstrip('.')
         
         return formatted
 
     @classmethod
-    def parse_from_bytes(cls, value: Union[int, float]) -> 'Storage':
+    def parse_from_bytes(cls, value: Union[int, float, Decimal]) -> 'Storage':
         """
         Create a Storage instance from a value in bytes.
 
@@ -196,23 +320,36 @@ class Storage:
         Examples:
             >>> storage = Storage.parse_from_bytes(1024)
             >>> print(storage)
-            1024.0 BYTES
+            1024 BYTES
         """
         return cls(value, StorageUnit.BYTES)
 
-    def convert_to_bytes(self) -> float:
+    def convert_to_bytes(self) -> Decimal:
         """
-        Convert the storage value to bytes.
+        Convert the storage value to bytes with exact decimal precision.
+
+        This method returns a Decimal object to maintain exact precision during
+        conversion operations. For backward compatibility with code expecting
+        float values, you can convert the result using float().
 
         Returns:
-            float: The value in bytes.
+            Decimal: The value in bytes with exact precision.
 
         Examples:
             >>> storage = Storage(1, StorageUnit.KIB)
-            >>> print(storage.convert_to_bytes())
+            >>> storage.convert_to_bytes()
+            Decimal('1024')
+            >>> 
+            >>> # For float compatibility
+            >>> float(storage.convert_to_bytes())
             1024.0
+            >>>
+            >>> # Exact decimal precision maintained
+            >>> precise = Storage("1.5", StorageUnit.KB)
+            >>> precise.convert_to_bytes()
+            Decimal('1500')
         """
-        return self.value * self.unit.value
+        return self._decimal_value * Decimal(str(self.unit.value))
 
     def convert_to(self, target_unit: StorageUnit) -> 'Storage':
         """
@@ -231,7 +368,7 @@ class Storage:
             1.0 KIB
         """
         bytes_value = self.convert_to_bytes()
-        new_value = bytes_value / target_unit.value
+        new_value = bytes_value / Decimal(str(target_unit.value))
         return Storage(new_value, target_unit)
 
     # Convenient conversion methods for binary units
@@ -614,11 +751,11 @@ class Storage:
         value_str = match.group(1)
         unit_str = match.group(2) or ''
         
-        # Parse the numeric value
+        # Parse the numeric value using Decimal for exact precision
         try:
-            value = float(value_str)
-        except ValueError:
-            raise ValueError(f"Invalid numeric value: '{value_str}'")
+            value = Decimal(value_str)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid numeric value: '{value_str}'") from e
         
         # Get unit aliases mapping
         unit_aliases = StorageUnit.get_unit_aliases()
@@ -659,7 +796,7 @@ class Storage:
         
         # If both operands have the same unit, preserve that unit
         if self.unit == other.unit:
-            total_value = self.value + other.value
+            total_value = self._decimal_value + other._decimal_value
             return Storage(total_value, self.unit)
         
         # Different units: convert to bytes
@@ -699,7 +836,7 @@ class Storage:
         
         # If both operands have the same unit, preserve that unit
         if self.unit == other.unit:
-            result_value = self.value - other.value
+            result_value = self._decimal_value - other._decimal_value
             if result_value < 0:
                 raise ValueError("Storage subtraction result cannot be negative")
             return Storage(result_value, self.unit)
@@ -733,7 +870,7 @@ class Storage:
         if factor < 0:
             raise ValueError("Cannot multiply storage by negative factor")
         
-        return Storage(self.value * factor, self.unit)
+        return Storage(self._decimal_value * Decimal(str(factor)), self.unit)
 
     def __rmul__(self, factor: Union[int, float]) -> 'Storage':
         """
@@ -774,13 +911,13 @@ class Storage:
         if isinstance(divisor, (int, float)):
             if divisor == 0:
                 raise ZeroDivisionError("Cannot divide storage by zero")
-            return Storage(self.value / divisor, self.unit)
+            return Storage(self._decimal_value / Decimal(str(divisor)), self.unit)
         
         elif isinstance(divisor, Storage):
             divisor_bytes = divisor.convert_to_bytes()
             if divisor_bytes == 0:
                 raise ZeroDivisionError("Cannot divide by zero storage")
-            return self.convert_to_bytes() / divisor_bytes
+            return float(self.convert_to_bytes() / divisor_bytes)
         
         return NotImplemented
 
@@ -806,7 +943,7 @@ class Storage:
         if divisor == 0:
             raise ZeroDivisionError("Cannot divide storage by zero")
         
-        return Storage(self.value // divisor, self.unit)
+        return Storage(self._decimal_value // Decimal(str(divisor)), self.unit)
 
     def __mod__(self, divisor: Union[int, float]) -> 'Storage':
         """
@@ -830,7 +967,7 @@ class Storage:
         if divisor == 0:
             raise ZeroDivisionError("Cannot perform modulo with zero")
         
-        return Storage(self.value % divisor, self.unit)
+        return Storage(self._decimal_value % Decimal(str(divisor)), self.unit)
 
     # Comparison operations
     def __eq__(self, other: object) -> bool:
@@ -852,7 +989,7 @@ class Storage:
         if not isinstance(other, Storage):
             return False
         
-        return abs(self.convert_to_bytes() - other.convert_to_bytes()) < 1e-10
+        return abs(self.convert_to_bytes() - other.convert_to_bytes()) < Decimal('1e-10')
 
     def __lt__(self, other: 'Storage') -> bool:
         """
@@ -933,7 +1070,7 @@ class Storage:
         Returns:
             int: Hash value based on the byte representation.
         """
-        return hash(self.convert_to_bytes())
+        return hash(float(self.convert_to_bytes()))
 
     def __int__(self) -> int:
         """
@@ -1094,7 +1231,7 @@ class Storage:
             >>> print(str(small))  # No scientific notation
             0.00009872019291 GIB
         """
-        value_str = self._format_value(self.value)
+        value_str = self._format_value(self._decimal_value)
         return f"{value_str} {self.unit.name}"
 
     def __repr__(self) -> str:
@@ -1109,7 +1246,7 @@ class Storage:
             >>> print(repr(storage))
             Storage(1.0, StorageUnit.KIB)
         """
-        return f"Storage({self.value}, {self.unit!r})"
+        return f"Storage({float(self._decimal_value)}, {self.unit!r})"
 
     def __format__(self, format_spec: str) -> str:
         """
@@ -1135,10 +1272,10 @@ class Storage:
         """
         if format_spec:
             # Use the provided format specification
-            formatted_value = format(self.value, format_spec)
+            formatted_value = format(float(self._decimal_value), format_spec)
         else:
             # Use our custom formatting to avoid scientific notation
-            formatted_value = self._format_value(self.value)
+            formatted_value = self._format_value(self._decimal_value)
         
         return f"{formatted_value} {self.unit.name}"
 

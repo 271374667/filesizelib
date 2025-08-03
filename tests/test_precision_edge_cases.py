@@ -397,7 +397,7 @@ class TestInteractionWithOtherFeatures:
         
         # But the internal value should maintain full precision for calculations
         as_bytes = parsed.convert_to_bytes()
-        assert abs(as_bytes - 1123456.789) < 1  # Should be close to full precision
+        assert abs(float(as_bytes) - 1123456.789) < 1  # Should be close to full precision
 
 
 class TestMemoryAndPerformanceEdgeCases:

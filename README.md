@@ -15,6 +15,7 @@
 
 - 📦 **Comprehensive Unit Support**: Binary (KiB, MiB, GiB...), decimal (KB, MB, GB...), and bit units
 - 🧮 **Smart Arithmetic Support**: Same-unit operations preserve units (1 GB + 2 GB = 3 GB), mixed units convert automatically
+- ✨ **Exact Decimal Precision**: Eliminates floating-point errors (6.682 MB stays exactly 6.682 MB, not 6.68200000000000038369 MB)
 - 🎯 **Configurable Precision**: Eliminate scientific notation with configurable decimal precision (no more 1.23e-05 GB!)
 - 🔤 **Intuitive String Initialization**: Direct string parsing in constructors - `Storage("1.5 GB")` works out of the box
 - ⚡ **Property-Based Conversions**: Access any unit as a property - `storage.MB`, `storage.GiB`, `storage.TB`, etc.
@@ -58,6 +59,34 @@ converted = size_classic.convert_to_gib()   # Classic conversion method
 file_size = Storage.get_size_from_path(".")  # Get directory size
 total = size + file_size                     # Add sizes
 print(f"Total: {total.auto_scale()}")       # Auto-scale for readability
+```
+
+## ✨ Exact Decimal Precision
+
+filesizelib eliminates floating-point precision errors using Python's Decimal module:
+
+```python
+from filesizelib import Storage
+
+# ❌ Before: Floating-point precision errors
+# Other libraries might show: 6.68200000000000038369 MB
+
+# ✅ After: Exact decimal precision
+precise = Storage("6.682 MB")
+print(precise)                          # 6.682 MB (exact!)
+print(precise.decimal_value)            # Decimal('6.682')
+print(precise.value)                    # 6.682 (float for compatibility)
+
+# Perfect arithmetic precision
+a = Storage("1.1 GB")
+b = Storage("2.2 GB") 
+result = a + b
+print(result)                           # 3.3 GB (exactly!)
+print(result.decimal_value)             # Decimal('3.3')
+
+# For applications requiring exact precision
+exact_bytes = precise.convert_to_bytes()  # Returns Decimal
+float_bytes = float(exact_bytes)          # Convert to float if needed
 ```
 
 ## Unit Conversion Flow
@@ -139,51 +168,77 @@ print(f"data.value = {data.value}")           # 1.0 (original value in original 
 print(f"int(data) = {int(data)}")             # 1073741824 (bytes as integer)
 print(f"float(data) = {float(data)}")         # 1073741824.0 (bytes as float)
 
-# Key difference: .value vs int()/float()
+# Key differences: .value vs .decimal_value vs int()/float()
 gb_size = Storage("1.5 GB")
-print(f"gb_size.value = {gb_size.value}")     # 1.5 (original GB value)
+print(f"gb_size.value = {gb_size.value}")     # 1.5 (original GB value as float)
+print(f"gb_size.decimal_value = {gb_size.decimal_value}")  # Decimal('1.5') (exact)
 print(f"int(gb_size) = {int(gb_size)}")       # 1500000000 (converted to bytes)
 print(f"float(gb_size) = {float(gb_size)}")   # 1500000000.0 (converted to bytes)
 ```
 
-### 🔍 Important: Understanding .value vs int() vs float()
+### 🔍 Important: Understanding .value vs .decimal_value vs int() vs float()
 
-This is crucial for proper usage - these three approaches return different values:
+This is crucial for proper usage - these four approaches return different values with different precision characteristics:
 
 ```python
 # Example with a 1.5 GB file
 file_size = Storage("1.5 GB")
 
-# 1. .value - Returns the original numeric value in the original unit
-print(f"file_size.value = {file_size.value}")        # 1.5 (the GB value)
+# 1. .value - Returns the original numeric value as float (backward compatibility)
+print(f"file_size.value = {file_size.value}")        # 1.5 (float - GB value)
+print(f"type: {type(file_size.value)}")              # <class 'float'>
 print(f"file_size.unit = {file_size.unit}")          # StorageUnit.GB
 
-# 2. int() - Returns total bytes as integer (for exact byte operations)
+# 2. .decimal_value - Returns exact decimal precision (NEW!)
+print(f"file_size.decimal_value = {file_size.decimal_value}")  # Decimal('1.5')
+print(f"type: {type(file_size.decimal_value)}")      # <class 'decimal.Decimal'>
+
+# 3. int() - Returns total bytes as integer (for exact byte operations)
 print(f"int(file_size) = {int(file_size)}")          # 1500000000 (bytes)
 print(f"type: {type(int(file_size))}")                # <class 'int'>
 
-# 3. float() - Returns total bytes as float (for precise calculations)
+# 4. float() - Returns total bytes as float (for calculations)
 print(f"float(file_size) = {float(file_size)}")      # 1500000000.0 (bytes)
 print(f"type: {type(float(file_size))}")              # <class 'float'>
 
+# Precision comparison example
+precise_size = Storage("6.682 MB")
+print(f"String: {precise_size}")                     # 6.682 MB (exact display)
+print(f"Value (float): {precise_size.value}")        # 6.682 (may have tiny precision loss)
+print(f"Decimal: {precise_size.decimal_value}")      # Decimal('6.682') (exact!)
+
 # Real-world usage examples:
-# Use .value when you need the original unit value
+# Use .value for backward compatibility and general float operations
 display_text = f"{file_size.value} {file_size.unit.name}"  # "1.5 GB"
+
+# Use .decimal_value for financial calculations, exact measurements
+from decimal import Decimal
+cost_per_gb = Decimal("0.023")  # $0.023 per GB
+monthly_cost = file_size.decimal_value * cost_per_gb  # Exact calculation
 
 # Use int() for byte-level operations, file I/O, or exact comparisons
 bytes_needed = int(file_size)                         # Get exact byte count
 if bytes_needed > 1000000000:                         # Compare with byte threshold
     print("Large file detected")
 
-# Use float() for mathematical calculations involving bytes
+# Use float() for mathematical calculations involving bytes (when precision loss is acceptable)
 average_byte_size = float(file_size) / 1000           # Calculate per-unit metrics
 compression_ratio = float(file_size) / float(compressed_size)
 
 # Property conversions return Storage objects (not raw numbers)
-mb_version = file_size.MB                             # Returns Storage(1500.0, MB)
-print(f"As MB object: {mb_version}")                  # "1500.0 MB"
+mb_version = file_size.MB                             # Returns Storage(1500, MB)
+print(f"As MB object: {mb_version}")                  # "1500 MB"
 print(f"MB as bytes: {int(mb_version)}")              # Still 1500000000 bytes
 ```
+
+#### Quick Reference Table
+
+| Method | Returns | Unit | Use Case | Example Output |
+|--------|---------|------|----------|----------------|
+| `.value` | `float` | Original | Backward compatibility, general use | `1.5` |
+| `.decimal_value` | `Decimal` | Original | Exact precision, financial calculations | `Decimal('1.5')` |
+| `int()` | `int` | Bytes | Byte operations, file I/O | `1500000000` |
+| `float()` | `float` | Bytes | Byte calculations (precision loss OK) | `1500000000.0` |
 
 ### Comprehensive Examples
 

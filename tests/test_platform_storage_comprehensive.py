@@ -107,16 +107,15 @@ class TestWindowsStorageComprehensive:
         
         storage = WindowsStorage()
         
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            
-            # Mock the directory to appear large
-            with patch('os.listdir') as mock_listdir:
-                # Simulate a large directory (>100 files)
-                mock_listdir.return_value = [f"file_{i}.txt" for i in range(150)]
-                
-                should_optimize = storage._should_use_windows_optimization(temp_path)
-                assert should_optimize is True
+        # Create a mock Path object that we can control
+        mock_path = MagicMock(spec=Path)
+        mock_path.is_dir.return_value = True
+        
+        # Mock iterdir to simulate a large directory (>100 files)
+        mock_path.iterdir.return_value = [f"file_{i}.txt" for i in range(150)]
+        
+        should_optimize = storage._should_use_windows_optimization(mock_path)
+        assert should_optimize is True
     
     @patch('platform.system')
     @patch('subprocess.run')

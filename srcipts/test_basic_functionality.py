@@ -279,12 +279,12 @@ def test_error_handling():
     except ValueError:
         print("✓ Negative value error handling works")
     
-    # Test invalid types
+    # Test invalid string format (should raise ValueError for string parsing)
     try:
         Storage("invalid", StorageUnit.BYTES)
-        assert False, "Should have raised TypeError"
-    except TypeError:
-        print("✓ Invalid type error handling works")
+        assert False, "Should have raised ValueError for invalid string format"
+    except ValueError:
+        print("✓ Invalid string format error handling works")
     
     # Test invalid string parsing
     try:
@@ -317,22 +317,22 @@ def test_edge_cases():
     
     # Test zero values
     zero_storage = Storage(0, StorageUnit.BYTES)
-    assert zero_storage.convert_to_bytes() == 0.0
+    assert float(zero_storage.convert_to_bytes()) == 0.0
     print("✓ Zero value handling works")
     
     # Test very large values
     large_storage = Storage(1e15, StorageUnit.BYTES)
-    assert large_storage.convert_to_bytes() == 1e15
+    assert float(large_storage.convert_to_bytes()) == 1e15
     print("✓ Large value handling works")
     
     # Test very small values
     small_storage = Storage(0.001, StorageUnit.BYTES)
-    assert small_storage.convert_to_bytes() == 0.001
+    assert float(small_storage.convert_to_bytes()) == 0.001
     print("✓ Small value handling works")
     
     # Test bit operations
     bits_storage = Storage(8, StorageUnit.BITS)
-    assert bits_storage.convert_to_bytes() == 1.0
+    assert float(bits_storage.convert_to_bytes()) == 1.0
     print("✓ Bit operations work")
 
 

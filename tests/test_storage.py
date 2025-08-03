@@ -133,7 +133,7 @@ class TestStorageConversion:
         storage = Storage.parse_from_bytes(bytes_value)
         assert storage.value == float(bytes_value)
         assert storage.unit == StorageUnit.BYTES
-        assert storage.convert_to_bytes() == float(bytes_value)
+        assert float(storage.convert_to_bytes()) == float(bytes_value)
 
 
 class TestStorageArithmetic:
@@ -720,7 +720,7 @@ class TestStorageEdgeCases:
         storage = Storage(small_value, StorageUnit.BYTES)
         
         assert storage.value == small_value
-        assert storage.convert_to_bytes() == small_value
+        assert float(storage.convert_to_bytes()) == small_value
     
     def test_precision_maintenance(self):
         """Test that precision is maintained in calculations."""
@@ -734,7 +734,7 @@ class TestStorageEdgeCases:
         # Addition converts to bytes, so test in bytes
         added_result = doubled + storage
         expected_bytes = (1/3 * 2 + 1/3) * 1024  # 1 * 1024
-        assert abs(added_result.convert_to_bytes() - expected_bytes) < 1e-10
+        assert abs(float(added_result.convert_to_bytes()) - expected_bytes) < 1e-10
     
     def test_bit_unit_precision(self):
         """Test precision with bit units."""
