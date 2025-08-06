@@ -8,13 +8,18 @@ conversion, arithmetic operations, and parsing functionality.
 import math
 import re
 import platform
+import threading
 from decimal import Decimal, getcontext
 from pathlib import Path
-from typing import Union, Optional, overload
+from typing import Union, Optional
 from .storage_unit import StorageUnit
 
 # Set high precision for decimal operations
 getcontext().prec = 50
+
+# Cache commonly used Decimal constants for performance
+_DECIMAL_ONE = Decimal('1')
+_DECIMAL_POINT_ONE = Decimal('0.1')
 
 
 class Storage:
@@ -82,8 +87,16 @@ class Storage:
         0.0001234567890 GB
     """
     
-    # Class variable for configurable decimal precision
+    # Class variables for configuration
     _decimal_precision: int = 20
+    _comparison_tolerance: Decimal = Decimal('1e-10')  # Tolerance for equality comparisons
+    _lock = threading.RLock()  # Thread safety for class variable modifications
+    
+    @classmethod
+    def _ensure_decimal_context(cls) -> None:
+        """Ensure decimal context is properly configured."""
+        if getcontext().prec < 50:
+            getcontext().prec = 50
 
     def __init__(self, value: Union[int, float, str, Decimal], unit: StorageUnit = StorageUnit.AUTO) -> None:
         """
@@ -119,6 +132,9 @@ class Storage:
             >>> storage.decimal_value
             Decimal('6.682')
         """
+        # Ensure decimal context is configured
+        self._ensure_decimal_context()
+        
         # Handle string input with automatic parsing
         if isinstance(value, str):
             if unit != StorageUnit.AUTO:
@@ -143,12 +159,12 @@ class Storage:
             raise TypeError(f"Unit must be a StorageUnit, got {type(unit).__name__}")
         
         if value < 0:
-            raise ValueError("Storage value cannot be negative")
+            raise ValueError(f"Storage value cannot be negative: {value}")
         
         # Convert to Decimal for exact precision
         if isinstance(value, float):
             if not math.isfinite(value):
-                raise ValueError("Storage value cannot be infinity or NaN")
+                raise ValueError(f"Storage value must be finite, got: {value}")
             # Convert float to string first to avoid precision loss
             self._decimal_value = Decimal(str(value))
         elif isinstance(value, (int, Decimal)):
@@ -196,6 +212,9 @@ class Storage:
         
         Returns:
             Decimal: The exact decimal value without precision loss.
+        
+        Raises:
+            AttributeError: If the internal decimal value is not initialized.
             
         Examples:
             >>> storage = Storage("6.682", StorageUnit.MB)
@@ -217,6 +236,8 @@ class Storage:
             scientific applications, or any context where exact decimal
             precision is required.
         """
+        if not hasattr(self, '_decimal_value'):
+            raise AttributeError("Internal decimal value not initialized")
         return self._decimal_value
 
     @classmethod
@@ -248,7 +269,8 @@ class Storage:
         if precision < 0:
             raise ValueError("Precision cannot be negative")
         
-        cls._decimal_precision = precision
+        with cls._lock:
+            cls._decimal_precision = precision
     
     @classmethod
     def get_decimal_precision(cls) -> int:
@@ -278,7 +300,7 @@ class Storage:
         # Handle special case of zero precision
         if self._decimal_precision == 0:
             # Round to nearest integer
-            return str(int(value.quantize(Decimal('1'))))
+            return str(int(value.quantize(_DECIMAL_ONE)))
         
         # Handle integer values
         if value % 1 == 0:
@@ -293,7 +315,7 @@ class Storage:
             integer_part, decimal_part = formatted.split('.')
             if len(decimal_part) > self._decimal_precision:
                 # Use quantize to limit decimal places
-                quantizer = Decimal('0.1') ** self._decimal_precision
+                quantizer = _DECIMAL_POINT_ONE ** self._decimal_precision
                 value = value.quantize(quantizer)
                 formatted = format(value, 'f')
             
@@ -989,7 +1011,7 @@ class Storage:
         if not isinstance(other, Storage):
             return False
         
-        return abs(self.convert_to_bytes() - other.convert_to_bytes()) < Decimal('1e-10')
+        return abs(self.convert_to_bytes() - other.convert_to_bytes()) < self._comparison_tolerance
 
     def __lt__(self, other: 'Storage') -> bool:
         """
@@ -1403,13 +1425,11 @@ class Storage:
                 StorageUnit.BYTES, StorageUnit.KIB, StorageUnit.MIB, StorageUnit.GIB,
                 StorageUnit.TIB, StorageUnit.PIB, StorageUnit.EIB, StorageUnit.ZIB, StorageUnit.YIB
             ]
-            threshold = 1024
         else:
             units = [
                 StorageUnit.BYTES, StorageUnit.KB, StorageUnit.MB, StorageUnit.GB,
                 StorageUnit.TB, StorageUnit.PB, StorageUnit.EB, StorageUnit.ZB, StorageUnit.YB
             ]
-            threshold = 1000
         
         # Find the most appropriate unit
         for i, unit in enumerate(units[:-1]):
