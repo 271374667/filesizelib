@@ -104,17 +104,20 @@ class TestWindowsStorageComprehensive:
     def test_windows_optimization_large_directory_mock(self, mock_system):
         """Test Windows optimization for large directory using mocks."""
         mock_system.return_value = 'Windows'
-        
+
         storage = WindowsStorage()
-        
+
         # Create a mock Path object that we can control
         mock_path = MagicMock(spec=Path)
         mock_path.is_dir.return_value = True
-        
+        mock_path.__str__.return_value = "/tmp/test_directory"  # Safe path string
+
         # Mock iterdir to simulate a large directory (>100 files)
         mock_path.iterdir.return_value = [f"file_{i}.txt" for i in range(150)]
-        
-        should_optimize = storage._should_use_windows_optimization(mock_path)
+
+        # Mock the path safety validation to avoid security check issues
+        with patch.object(storage, '_validate_path_safety'):
+            should_optimize = storage._should_use_windows_optimization(mock_path)
         assert should_optimize is True
     
     @patch('platform.system')

@@ -18,26 +18,26 @@ from .storage_unit import StorageUnit
 class PlatformStorageBase(Storage):
     """
     Base class for platform-specific storage implementations.
-    
+
     This class extends the base Storage class and provides a foundation
     for platform-specific optimizations while maintaining compatibility
     with the base Storage interface.
     """
-    
+
     def __init__(self, value: Union[int, float] = 0, unit: StorageUnit = StorageUnit.BYTES) -> None:
         """
         Initialize platform-specific storage.
-        
+
         Args:
             value: The numerical value of the storage (defaults to 0).
             unit: The unit of the storage value (defaults to BYTES).
         """
         super().__init__(value, unit)
-    
+
     def get_platform_info(self) -> Dict[str, Any]:
         """
         Get platform-specific information.
-        
+
         Returns:
             Dict[str, Any]: Dictionary containing platform information.
         """
@@ -46,6 +46,68 @@ class PlatformStorageBase(Storage):
             'supports_optimization': True,
             'file_system_type': 'generic'
         }
+
+    def _validate_path_safety(self, path: Path) -> None:
+        """
+        Validate that the path is safe to use in external commands.
+
+        This method prevents command injection by validating that:
+        - Path exists and is within expected boundaries
+        - Path doesn't contain suspicious characters
+        - Path resolves to a valid filesystem location
+
+        Args:
+            path: The path to validate.
+
+        Raises:
+            ValueError: If the path is potentially unsafe.
+            FileNotFoundError: If the path doesn't exist.
+        """
+        import re
+
+        if not path.exists():
+            raise FileNotFoundError(f"Path does not exist: {path}")
+
+        # Resolve to absolute path to detect directory traversal attempts
+        resolved_path = path.resolve()
+
+        # Check for suspicious characters in the path
+        suspicious_chars = [';', '&', '|', '`', '$', '(', ')', '{', '}', '<', '>', '"', "'"]
+        path_str = str(resolved_path)
+
+        for char in suspicious_chars:
+            if char in path_str:
+                raise ValueError(f"Path contains potentially unsafe character: {char}")
+
+        # Validate against common injection patterns
+        injection_patterns = [
+            r'\.\.[/\\]',  # Directory traversal
+            r'\$[a-zA-Z_]',  # Variable references
+            r'`.*`',  # Command substitution
+            r'\([^)]*\)',  # Command grouping
+            r'".*"',  # String literals (could contain commands)
+            r".*'",  # String literals (could contain commands)
+        ]
+
+        for pattern in injection_patterns:
+            if re.search(pattern, path_str):
+                raise ValueError(f"Path matches potentially dangerous pattern: {pattern}")
+
+        # Ensure path is within reasonable bounds
+        if len(path_str) > 4096:  # Reasonable path length limit
+            raise ValueError(f"Path exceeds maximum length: {len(path_str)}")
+
+        # Additional safety check: ensure path doesn't point to sensitive system locations
+        sensitive_paths = [
+            '/etc/passwd', '/etc/shadow', '/etc/sudoers',
+            '/proc/self/environ', '/proc/self/mem',
+            'C:\\Windows\\System32\\config\\SAM',
+            'C:\\Windows\\System32\\config\\SYSTEM'
+        ]
+
+        for sensitive_path in sensitive_paths:
+            if str(resolved_path).lower().startswith(sensitive_path.lower()):
+                raise ValueError(f"Path references sensitive system location: {sensitive_path}")
 
 
 class WindowsStorage(PlatformStorageBase):
@@ -108,48 +170,58 @@ class WindowsStorage(PlatformStorageBase):
     def _should_use_windows_optimization(self, path: Path) -> bool:
         """
         Determine if Windows optimization should be used for the given path.
-        
+
         Args:
             path: The path to evaluate.
-            
+
         Returns:
             bool: True if Windows optimization should be used.
         """
         try:
+            # Security: Validate path first
+            self._validate_path_safety(path)
+
             # Use optimization for directories with many files
             # This is a heuristic - in practice, you might use Windows APIs
             file_count = sum(1 for _ in path.iterdir())
             return file_count > 100
         except (PermissionError, OSError):
             return False
-    
+
+        
     def _get_size_windows_optimized(self, path: Path) -> 'Storage':
         """
         Get directory size using Windows-optimized methods.
-        
+
         This method can be extended to use Windows APIs like FindFirstFile/FindNextFile
         or PowerShell commands for better performance on large directories.
-        
+
         Args:
             path: The directory path.
-            
+
         Returns:
             Storage: Storage instance with the calculated size.
         """
         try:
-            # Example: Use PowerShell for very large directories (optional optimization)
-            # In practice, you might use ctypes to call Windows APIs directly
+            # Security: Validate and sanitize path before use
+            self._validate_path_safety(path)
+
+            # Use PowerShell with proper argument passing to prevent injection
             result = subprocess.run([
-                'powershell', '-Command', 
-                f'(Get-ChildItem -Path "{path}" -Recurse -File | Measure-Object -Property Length -Sum).Sum'
-            ], capture_output=True, text=True, timeout=30)
-            
+                'powershell', '-Command',
+                '$path = $args[0]; (Get-ChildItem -Path $path -Recurse -File | Measure-Object -Property Length -Sum).Sum',
+                str(path.resolve())
+            ], capture_output=True, text=True, timeout=30, shell=False)
+
             if result.returncode == 0 and result.stdout.strip():
-                size = float(result.stdout.strip())
-                return Storage.parse_from_bytes(size)
+                size_str = result.stdout.strip()
+                # Validate that the result is a valid number
+                if size_str.replace('.', '', 1).isdigit():
+                    size = float(size_str)
+                    return Storage.parse_from_bytes(size)
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, ValueError, FileNotFoundError):
             pass
-        
+
         # Fall back to standard method
         return Storage.get_size_from_path(path)
     
@@ -273,32 +345,43 @@ class LinuxStorage(PlatformStorageBase):
     def _get_size_linux_optimized(self, path: Path) -> 'Storage':
         """
         Get directory size using Linux-optimized methods.
-        
+
         This method uses the 'du' command for better performance on large
         directories, which is often faster than Python's directory traversal.
-        
+
         Args:
             path: The directory path.
-            
+
         Returns:
             Storage: Storage instance with the calculated size.
         """
         try:
-            # Use 'du' command for fast directory size calculation
+            # Security: Validate path before using in subprocess
+            self._validate_path_safety(path)
+
+            # Use 'du' command with proper argument validation
+            resolved_path = path.resolve()
+            if not resolved_path.is_dir():
+                raise ValueError(f"Path is not a directory: {resolved_path}")
+
             result = subprocess.run([
-                'du', '-s', '-B1', str(path)
-            ], capture_output=True, text=True, timeout=30)
-            
+                'du', '-s', '-B1', str(resolved_path)
+            ], capture_output=True, text=True, timeout=30, shell=False)
+
             if result.returncode == 0:
                 # Parse du output: "size\tpath"
-                size_str = result.stdout.split('\t')[0].strip()
-                size = int(size_str)
-                return Storage.parse_from_bytes(size)
-                
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, 
+                output_lines = result.stdout.strip().split('\n')
+                if output_lines:
+                    size_str = output_lines[0].split('\t')[0].strip()
+                    # Validate that the result is a valid number
+                    if size_str.isdigit():
+                        size = int(size_str)
+                        return Storage.parse_from_bytes(size)
+
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError,
                 ValueError, FileNotFoundError):
             pass
-        
+
         # Fall back to standard method
         return Storage.get_size_from_path(path)
     

@@ -9,10 +9,12 @@ import math
 import re
 import platform
 import threading
+import weakref
 from decimal import Decimal, getcontext
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, Dict, Any, Callable
 from .storage_unit import StorageUnit
+from .core import StorageValue, ConversionEngine, StringParser, ArithmeticEngine, PerformanceManager
 
 # Set high precision for decimal operations
 getcontext().prec = 50
@@ -20,6 +22,11 @@ getcontext().prec = 50
 # Cache commonly used Decimal constants for performance
 _DECIMAL_ONE = Decimal('1')
 _DECIMAL_POINT_ONE = Decimal('0.1')
+
+# Global cache for decimal operations to improve performance
+_DECIMAL_CACHE: Dict[str, Decimal] = {}
+_DECIMAL_CACHE_LOCK = threading.RLock()
+_MAX_CACHE_SIZE = 1000
 
 
 class Storage:
@@ -91,12 +98,71 @@ class Storage:
     _decimal_precision: int = 20
     _comparison_tolerance: Decimal = Decimal('1e-10')  # Tolerance for equality comparisons
     _lock = threading.RLock()  # Thread safety for class variable modifications
+
+    # Architecture refactoring: Use focused components
+    _storage_value: Optional[StorageValue] = None
+    _conversion_engine: Optional[ConversionEngine] = None
+    _arithmetic_engine: Optional[ArithmeticEngine] = None
+    _performance_manager: Optional[PerformanceManager] = None
     
     @classmethod
     def _ensure_decimal_context(cls) -> None:
         """Ensure decimal context is properly configured."""
         if getcontext().prec < 50:
             getcontext().prec = 50
+
+    def _validate_input(self, value: Union[int, float, str, Decimal], unit: StorageUnit) -> tuple[Decimal, StorageUnit]:
+        """
+        Validate and normalize input parameters.
+        
+        Args:
+            value: The input value to validate
+            unit: The storage unit to validate
+            
+        Returns:
+            tuple: (validated_decimal_value, validated_unit)
+            
+        Raises:
+            TypeError: If value or unit types are invalid
+            ValueError: If value is negative or invalid
+        """
+        # Handle string input with automatic parsing
+        if isinstance(value, str):
+            if unit != StorageUnit.AUTO:
+                # If unit is explicitly provided with string input, ignore AUTO and use parse
+                parsed = self.parse(value, unit if unit != StorageUnit.AUTO else None)
+            else:
+                # Use automatic parsing
+                parsed = self.parse(value)
+            return parsed._storage_value.decimal_value, parsed.unit
+
+        # Handle numeric input
+        if not isinstance(value, (int, float, Decimal)):
+            raise TypeError(f"Value must be a number or string, got {type(value).__name__}")
+
+        if unit == StorageUnit.AUTO:
+            # If AUTO is specified with numeric input, default to bytes
+            unit = StorageUnit.BYTES
+
+        if not isinstance(unit, StorageUnit):
+            raise TypeError(f"Unit must be a StorageUnit, got {type(unit).__name__}")
+
+        if value < 0:
+            raise ValueError(f"Storage value cannot be negative: {value}")
+
+        # Convert to Decimal for exact precision
+        if isinstance(value, float):
+            if not math.isfinite(value):
+                raise ValueError(f"Storage value must be finite, got: {value}")
+            # Convert float to string first to avoid precision loss
+            decimal_value = Decimal(str(value))
+        elif isinstance(value, (int, Decimal)):
+            decimal_value = Decimal(value)
+        else:
+            # This shouldn't happen due to the type check above
+            decimal_value = Decimal(str(value))
+
+        return decimal_value, unit
 
     def __init__(self, value: Union[int, float, str, Decimal], unit: StorageUnit = StorageUnit.AUTO) -> None:
         """
@@ -115,83 +181,105 @@ class Storage:
             >>> storage = Storage(1024, StorageUnit.BYTES)
             >>> print(storage)
             1024 BYTES
-            
+
             >>> storage = Storage("1.5 MB")  # Automatic parsing
             >>> print(storage)
             1.5 MB
-            
+
             >>> storage = Storage("2048")  # Defaults to bytes when no unit specified
             >>> print(storage)
             2048 BYTES
-            
+
             >>> # Using Decimal for exact precision
             >>> from decimal import Decimal
             >>> storage = Storage(Decimal("6.682"), StorageUnit.MB)
             >>> print(storage)
             6.682 MB
-            >>> storage.decimal_value
-            Decimal('6.682')
         """
-        # Ensure decimal context is configured
-        self._ensure_decimal_context()
+        decimal_value, validated_unit = self._validate_input(value, unit)
         
-        # Handle string input with automatic parsing
-        if isinstance(value, str):
-            if unit != StorageUnit.AUTO:
-                # If unit is explicitly provided with string input, ignore AUTO and use parse
-                parsed = self.parse(value, unit if unit != StorageUnit.AUTO else None)
-            else:
-                # Use automatic parsing
-                parsed = self.parse(value)
-            self._decimal_value = parsed._decimal_value
-            self.unit = parsed.unit
-            return
+        self.unit = validated_unit
         
-        # Handle numeric input
-        if not isinstance(value, (int, float, Decimal)):
-            raise TypeError(f"Value must be a number or string, got {type(value).__name__}")
-        
-        if unit == StorageUnit.AUTO:
-            # If AUTO is specified with numeric input, default to bytes
-            unit = StorageUnit.BYTES
-        
-        if not isinstance(unit, StorageUnit):
-            raise TypeError(f"Unit must be a StorageUnit, got {type(unit).__name__}")
-        
-        if value < 0:
-            raise ValueError(f"Storage value cannot be negative: {value}")
-        
-        # Convert to Decimal for exact precision
-        if isinstance(value, float):
-            if not math.isfinite(value):
-                raise ValueError(f"Storage value must be finite, got: {value}")
-            # Convert float to string first to avoid precision loss
-            self._decimal_value = Decimal(str(value))
-        elif isinstance(value, (int, Decimal)):
-            self._decimal_value = Decimal(value)
-        else:
-            # This shouldn't happen due to the type check above
-            self._decimal_value = Decimal(str(value))
-        
+        # Initialize components
+        self._initialize_components(decimal_value, validated_unit)
+
+    def _initialize_components(self, decimal_value: Decimal, unit: StorageUnit) -> None:
+        """Initialize the focused components for architecture refactoring."""
+        # Initialize StorageValue
+        self._storage_value = StorageValue(decimal_value, unit)
+
+        # Initialize engines
+        self._conversion_engine = ConversionEngine(self._storage_value)
+        self._arithmetic_engine = ArithmeticEngine(self._storage_value)
+        self._performance_manager = PerformanceManager()
+
+        # Initialize performance caching
+        self._conversion_properties: Dict[str, 'Storage'] = {}
+        self._cache_lock = threading.RLock()
+
+        # Keep backward compatibility attributes
         self.unit = unit
+
+    @classmethod
+    def _get_cached_decimal(cls, value_str: str) -> Decimal:
+        """
+        Get a cached Decimal value or create and cache it.
+
+        This method improves performance by caching frequently used Decimal values
+        to avoid repeated string-to-Decimal conversions.
+
+        Args:
+            value_str: String representation of the decimal value.
+
+        Returns:
+            Decimal: The cached or newly created Decimal value.
+        """
+        with _DECIMAL_CACHE_LOCK:
+            if value_str in _DECIMAL_CACHE:
+                return _DECIMAL_CACHE[value_str]
+
+            # Create new Decimal and cache it
+            decimal_value = Decimal(value_str)
+
+            # Simple cache eviction if cache is full
+            if len(_DECIMAL_CACHE) >= _MAX_CACHE_SIZE:
+                # Remove oldest entry (simple FIFO)
+                oldest_key = next(iter(_DECIMAL_CACHE))
+                del _DECIMAL_CACHE[oldest_key]
+
+            _DECIMAL_CACHE[value_str] = decimal_value
+            return decimal_value
+
+    @property
+    def _bytes(self) -> Decimal:
+        """
+        Get the byte value using the StorageValue component.
+
+        This property delegates to the StorageValue component for byte calculation,
+        maintaining backward compatibility while using the new architecture.
+
+        Returns:
+            Decimal: The total bytes represented by this storage.
+        """
+        return self._storage_value.to_bytes()
 
     @property
     def value(self) -> float:
         """
         Get the storage value as a float for backward compatibility.
-        
+
         This property maintains backward compatibility with existing code that expects
         float values. For applications requiring exact decimal precision, use the
         decimal_value property instead.
-        
+
         Returns:
             float: The storage value converted to float.
-            
+
         Note:
             Converting to float may introduce small precision errors for values that
             cannot be exactly represented in IEEE 754 floating-point format.
             Use decimal_value for exact precision.
-            
+
         Examples:
             >>> storage = Storage("6.682", StorageUnit.MB)
             >>> storage.value  # Returns float (may have tiny precision loss)
@@ -199,13 +287,13 @@ class Storage:
             >>> storage.decimal_value  # Returns exact Decimal
             Decimal('6.682')
         """
-        return float(self._decimal_value)
-    
-    @property 
+        return float(self._storage_value.decimal_value)
+
+    @property
     def decimal_value(self) -> Decimal:
         """
         Get the exact decimal value with full precision.
-        
+
         This property provides access to the internal Decimal representation that
         maintains exact precision for all decimal operations. Use this when you
         need guaranteed precision without any floating-point rounding errors.
@@ -236,9 +324,9 @@ class Storage:
             scientific applications, or any context where exact decimal
             precision is required.
         """
-        if not hasattr(self, '_decimal_value'):
-            raise AttributeError("Internal decimal value not initialized")
-        return self._decimal_value
+        if not hasattr(self, '_storage_value') or self._storage_value is None:
+            raise AttributeError("Storage value not initialized")
+        return self._storage_value.decimal_value
 
     @classmethod
     def set_decimal_precision(cls, precision: int) -> None:
@@ -361,7 +449,7 @@ class Storage:
             >>> storage = Storage(1, StorageUnit.KIB)
             >>> storage.convert_to_bytes()
             Decimal('1024')
-            >>> 
+            >>>
             >>> # For float compatibility
             >>> float(storage.convert_to_bytes())
             1024.0
@@ -371,7 +459,8 @@ class Storage:
             >>> precise.convert_to_bytes()
             Decimal('1500')
         """
-        return self._decimal_value * Decimal(str(self.unit.value))
+        # Performance optimization: Use cached bytes value
+        return self._bytes
 
     def convert_to(self, target_unit: StorageUnit) -> 'Storage':
         """
@@ -389,9 +478,12 @@ class Storage:
             >>> print(converted)
             1.0 KIB
         """
-        bytes_value = self.convert_to_bytes()
-        new_value = bytes_value / Decimal(str(target_unit.value))
-        return Storage(new_value, target_unit)
+        # Use ConversionEngine for the conversion
+        converted_value = self._conversion_engine.convert_to(target_unit)
+
+        # Create new Storage instance with converted value
+        result = Storage(converted_value.decimal_value, converted_value.unit)
+        return result
 
     # Convenient conversion methods for binary units
     def convert_to_kib(self) -> 'Storage':
@@ -719,7 +811,7 @@ class Storage:
         The string should be in the format "value unit", where value is a number
         and unit is one of the supported storage units. The parsing is:
         - Case insensitive
-        - Supports both '.' and ',' as decimal separators  
+        - Supports both '.' and ',' as decimal separators
         - Supports spaces and no spaces between value and unit
         - Uses bytes as default unit if unit is not recognized or provided
 
@@ -738,54 +830,31 @@ class Storage:
             >>> storage = Storage.parse("1.5 MB")
             >>> print(storage)
             1.5 MB
-            
+
             >>> storage = Storage.parse("1,024 KiB")
-            >>> print(storage) 
+            >>> print(storage)
             1024.0 KIB
-            
+
             >>> storage = Storage.parse("500")  # defaults to bytes
             >>> print(storage)
             500.0 BYTES
         """
         if not isinstance(string, str):
             raise TypeError(f"Input must be a string, got {type(string).__name__}")
-        
+
         if not string.strip():
             raise ValueError("Input string cannot be empty")
-        
+
         if default_unit is None:
             default_unit = StorageUnit.BYTES
-        
-        # Normalize the string: strip whitespace, convert to lowercase
-        normalized = string.strip().lower()
-        
-        # Replace comma with dot for decimal separator
-        normalized = normalized.replace(',', '.')
-        
-        # Pattern to match number and optional unit with optional whitespace
-        # Supports: "123", "123.45", "123 mb", "123.45mb", "123,45 gb", etc.
-        pattern = r'^([0-9]*\.?[0-9]+)\s*([a-z]*)?$'
-        match = re.match(pattern, normalized)
-        
-        if not match:
-            raise ValueError(f"Invalid format: '{string}'. Expected format: 'number [unit]'")
-        
-        value_str = match.group(1)
-        unit_str = match.group(2) or ''
-        
-        # Parse the numeric value using Decimal for exact precision
+
+        # Use StringParser for parsing
+        parser = StringParser()
         try:
-            value = Decimal(value_str)
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"Invalid numeric value: '{value_str}'") from e
-        
-        # Get unit aliases mapping
-        unit_aliases = StorageUnit.get_unit_aliases()
-        
-        # Find the unit, default to provided default_unit if not found
-        unit = unit_aliases.get(unit_str, default_unit)
-        
-        return cls(value, unit)
+            decimal_value, unit = parser.parse(string, default_unit)
+            return cls(decimal_value, unit)
+        except Exception as e:
+            raise ValueError(f"Invalid format: '{string}'. Expected format: 'number [unit]'") from e
 
     # Arithmetic operations
     def __add__(self, other: 'Storage') -> 'Storage':
@@ -806,7 +875,7 @@ class Storage:
             >>> total = s1 + s2
             >>> print(total)
             1536.0 BYTES
-            
+
             >>> s3 = Storage(1, StorageUnit.GB)
             >>> s4 = Storage(2, StorageUnit.GB)
             >>> same_unit_total = s3 + s4
@@ -815,15 +884,13 @@ class Storage:
         """
         if not isinstance(other, Storage):
             return NotImplemented
-        
-        # If both operands have the same unit, preserve that unit
-        if self.unit == other.unit:
-            total_value = self._decimal_value + other._decimal_value
-            return Storage(total_value, self.unit)
-        
-        # Different units: convert to bytes
-        total_bytes = self.convert_to_bytes() + other.convert_to_bytes()
-        return Storage.parse_from_bytes(total_bytes)
+
+        # Use ArithmeticEngine for addition
+        result_value = self._arithmetic_engine.add(other._storage_value)
+
+        # Create new Storage instance with result
+        result = Storage(result_value.decimal_value, result_value.unit)
+        return result
 
     def __sub__(self, other: 'Storage') -> 'Storage':
         """
@@ -846,7 +913,7 @@ class Storage:
             >>> diff = s1 - s2
             >>> print(diff)
             1536.0 BYTES
-            
+
             >>> s3 = Storage(5, StorageUnit.GB)
             >>> s4 = Storage(2, StorageUnit.GB)
             >>> same_unit_diff = s3 - s4
@@ -855,20 +922,13 @@ class Storage:
         """
         if not isinstance(other, Storage):
             return NotImplemented
-        
-        # If both operands have the same unit, preserve that unit
-        if self.unit == other.unit:
-            result_value = self._decimal_value - other._decimal_value
-            if result_value < 0:
-                raise ValueError("Storage subtraction result cannot be negative")
-            return Storage(result_value, self.unit)
-        
-        # Different units: convert to bytes
-        result_bytes = self.convert_to_bytes() - other.convert_to_bytes()
-        if result_bytes < 0:
-            raise ValueError("Storage subtraction result cannot be negative")
-        
-        return Storage.parse_from_bytes(result_bytes)
+
+        # Use ArithmeticEngine for subtraction
+        result_value = self._arithmetic_engine.subtract(other._storage_value)
+
+        # Create new Storage instance with result
+        result = Storage(result_value.decimal_value, result_value.unit)
+        return result
 
     def __mul__(self, factor: Union[int, float]) -> 'Storage':
         """
@@ -888,11 +948,16 @@ class Storage:
         """
         if not isinstance(factor, (int, float)):
             return NotImplemented
-        
+
         if factor < 0:
             raise ValueError("Cannot multiply storage by negative factor")
-        
-        return Storage(self._decimal_value * Decimal(str(factor)), self.unit)
+
+        # Use ArithmeticEngine for multiplication
+        result_value = self._arithmetic_engine.multiply(factor)
+
+        # Create new Storage instance with result
+        result = Storage(result_value.decimal_value, result_value.unit)
+        return result
 
     def __rmul__(self, factor: Union[int, float]) -> 'Storage':
         """
@@ -904,7 +969,12 @@ class Storage:
         Returns:
             Storage: A new Storage instance with the multiplied value.
         """
-        return self.__mul__(factor)
+        # Use ArithmeticEngine for multiplication
+        result_value = self._arithmetic_engine.multiply(factor)
+
+        # Create new Storage instance with result
+        result = Storage(result_value.decimal_value, result_value.unit)
+        return result
 
     def __truediv__(self, divisor: Union[int, float, 'Storage']) -> Union['Storage', float]:
         """
@@ -933,7 +1003,15 @@ class Storage:
         if isinstance(divisor, (int, float)):
             if divisor == 0:
                 raise ZeroDivisionError("Cannot divide storage by zero")
-            return Storage(self._decimal_value / Decimal(str(divisor)), self.unit)
+
+            # Use ArithmeticEngine for division
+            if not hasattr(self._arithmetic_engine, 'divide'):
+                # Fallback to StorageValue component
+                result_decimal = self._storage_value.decimal_value / Decimal(str(divisor))
+                return Storage(result_decimal, self.unit)
+
+            result_value = self._arithmetic_engine.divide(divisor)
+            return Storage(result_value.decimal_value, result_value.unit)
         
         elif isinstance(divisor, Storage):
             divisor_bytes = divisor.convert_to_bytes()
@@ -965,7 +1043,8 @@ class Storage:
         if divisor == 0:
             raise ZeroDivisionError("Cannot divide storage by zero")
         
-        return Storage(self._decimal_value // Decimal(str(divisor)), self.unit)
+        result_decimal = self._storage_value.decimal_value // Decimal(str(divisor))
+        return Storage(result_decimal, self.unit)
 
     def __mod__(self, divisor: Union[int, float]) -> 'Storage':
         """
@@ -989,7 +1068,8 @@ class Storage:
         if divisor == 0:
             raise ZeroDivisionError("Cannot perform modulo with zero")
         
-        return Storage(self._decimal_value % Decimal(str(divisor)), self.unit)
+        result_decimal = self._storage_value.decimal_value % Decimal(str(divisor))
+        return Storage(result_decimal, self.unit)
 
     # Comparison operations
     def __eq__(self, other: object) -> bool:
@@ -1122,116 +1202,125 @@ class Storage:
         """
         return float(self.convert_to_bytes())
 
-    # Conversion properties for quick access
+    # Conversion properties for quick access with caching
+    def _get_cached_conversion(self, unit_name: str, converter_func: Callable[[], 'Storage']) -> 'Storage':
+        """Get cached conversion property for performance."""
+        if unit_name not in self._conversion_properties:
+            with self._cache_lock:
+                # Double-check pattern
+                if unit_name not in self._conversion_properties:
+                    self._conversion_properties[unit_name] = converter_func()
+        return self._conversion_properties[unit_name]
+
     @property
     def BYTES(self) -> 'Storage':
         """Property to convert to bytes."""
-        return self.convert_to(StorageUnit.BYTES)
+        return self._get_cached_conversion('BYTES', lambda: self.convert_to(StorageUnit.BYTES))
     
     @property
     def KIB(self) -> 'Storage':
         """Property to convert to kibibytes (KiB)."""
-        return self.convert_to_kib()
+        return self._get_cached_conversion('KIB', self.convert_to_kib)
     
     @property
     def MIB(self) -> 'Storage':
         """Property to convert to mebibytes (MiB)."""
-        return self.convert_to_mib()
+        return self._get_cached_conversion('MIB', self.convert_to_mib)
     
     @property
     def GIB(self) -> 'Storage':
         """Property to convert to gibibytes (GiB)."""
-        return self.convert_to_gib()
+        return self._get_cached_conversion('GIB', self.convert_to_gib)
     
     @property
     def TIB(self) -> 'Storage':
         """Property to convert to tebibytes (TiB)."""
-        return self.convert_to_tib()
+        return self._get_cached_conversion('TIB', self.convert_to_tib)
     
     @property
     def PIB(self) -> 'Storage':
         """Property to convert to pebibytes (PiB)."""
-        return self.convert_to_pib()
+        return self._get_cached_conversion('PIB', self.convert_to_pib)
     
     @property
     def EIB(self) -> 'Storage':
         """Property to convert to exbibytes (EiB)."""
-        return self.convert_to_eib()
+        return self._get_cached_conversion('EIB', self.convert_to_eib)
     
     @property
     def ZIB(self) -> 'Storage':
         """Property to convert to zebibytes (ZiB)."""
-        return self.convert_to_zib()
+        return self._get_cached_conversion('ZIB', self.convert_to_zib)
     
     @property
     def YIB(self) -> 'Storage':
         """Property to convert to yobibytes (YiB)."""
-        return self.convert_to_yib()
+        return self._get_cached_conversion('YIB', self.convert_to_yib)
     
     @property
     def KB(self) -> 'Storage':
         """Property to convert to kilobytes (KB)."""
-        return self.convert_to_kb()
+        return self._get_cached_conversion('KB', self.convert_to_kb)
     
     @property
     def MB(self) -> 'Storage':
         """Property to convert to megabytes (MB)."""
-        return self.convert_to_mb()
+        return self._get_cached_conversion('MB', self.convert_to_mb)
     
     @property
     def GB(self) -> 'Storage':
         """Property to convert to gigabytes (GB)."""
-        return self.convert_to_gb()
+        return self._get_cached_conversion('GB', self.convert_to_gb)
     
     @property
     def TB(self) -> 'Storage':
         """Property to convert to terabytes (TB)."""
-        return self.convert_to_tb()
+        return self._get_cached_conversion('TB', self.convert_to_tb)
     
     @property
     def PB(self) -> 'Storage':
         """Property to convert to petabytes (PB)."""
-        return self.convert_to_pb()
+        return self._get_cached_conversion('PB', self.convert_to_pb)
     
     @property
     def EB(self) -> 'Storage':
         """Property to convert to exabytes (EB)."""
-        return self.convert_to_eb()
+        return self._get_cached_conversion('EB', self.convert_to_eb)
     
     @property
     def ZB(self) -> 'Storage':
         """Property to convert to zettabytes (ZB)."""
-        return self.convert_to_zb()
+        return self._get_cached_conversion('ZB', self.convert_to_zb)
     
     @property
     def YB(self) -> 'Storage':
         """Property to convert to yottabytes (YB)."""
-        return self.convert_to_yb()
+        return self._get_cached_conversion('YB', self.convert_to_yb)
     
     @property
     def BITS(self) -> 'Storage':
         """Property to convert to bits."""
-        return self.convert_to_bits()
+        return self._get_cached_conversion('BITS', self.convert_to_bits)
     
     @property
     def KILOBITS(self) -> 'Storage':
         """Property to convert to kilobits."""
-        return self.convert_to_kilobits()
+        return self._get_cached_conversion('KILOBITS', self.convert_to_kilobits)
     
     @property
     def MEGABITS(self) -> 'Storage':
         """Property to convert to megabits."""
-        return self.convert_to_megabits()
+        return self._get_cached_conversion('MEGABITS', self.convert_to_megabits)
     
     @property
     def GIGABITS(self) -> 'Storage':
         """Property to convert to gigabits."""
-        return self.convert_to_gigabits()
-    
+        return self._get_cached_conversion('GIGABITS', self.convert_to_gigabits)
+
     @property
     def TERABITS(self) -> 'Storage':
         """Property to convert to terabits."""
-        return self.convert_to_terabits()
+        return self._get_cached_conversion('TERABITS', self.convert_to_terabits)
 
     # String representations
     def __str__(self) -> str:
@@ -1253,7 +1342,7 @@ class Storage:
             >>> print(str(small))  # No scientific notation
             0.00009872019291 GIB
         """
-        value_str = self._format_value(self._decimal_value)
+        value_str = self._format_value(self._storage_value.decimal_value)
         return f"{value_str} {self.unit.name}"
 
     def __repr__(self) -> str:
@@ -1268,7 +1357,7 @@ class Storage:
             >>> print(repr(storage))
             Storage(1.0, StorageUnit.KIB)
         """
-        return f"Storage({float(self._decimal_value)}, {self.unit!r})"
+        return f"Storage({float(self._storage_value.decimal_value)}, {self.unit!r})"
 
     def __format__(self, format_spec: str) -> str:
         """
@@ -1294,14 +1383,74 @@ class Storage:
         """
         if format_spec:
             # Use the provided format specification
-            formatted_value = format(float(self._decimal_value), format_spec)
+            formatted_value = format(float(self._storage_value.decimal_value), format_spec)
         else:
             # Use our custom formatting to avoid scientific notation
-            formatted_value = self._format_value(self._decimal_value)
+            formatted_value = self._format_value(self._storage_value.decimal_value)
         
         return f"{formatted_value} {self.unit.name}"
 
     # File system operations
+    @staticmethod
+    def _validate_path(path: Union[str, Path]) -> Path:
+        """
+        Validate and normalize the input path.
+        
+        Args:
+            path: The path to validate (string or Path object).
+            
+        Returns:
+            Path: The validated and normalized Path object.
+            
+        Raises:
+            FileNotFoundError: If the path does not exist.
+        """
+        path_obj = Path(path)
+        
+        if not path_obj.exists():
+            raise FileNotFoundError(f"Path does not exist: {path}")
+        
+        return path_obj
+
+    @staticmethod
+    def _calculate_file_size(path_obj: Path) -> int:
+        """
+        Calculate the size of a file or directory.
+        
+        Args:
+            path_obj: The validated Path object.
+            
+        Returns:
+            int: The total size in bytes.
+            
+        Raises:
+            PermissionError: If access to the path is denied.
+            OSError: If an OS-level error occurs while accessing the path.
+        """
+        try:
+            if path_obj.is_file():
+                # For files, get the file size directly
+                return path_obj.stat().st_size
+            elif path_obj.is_dir():
+                # For directories, sum all file sizes recursively
+                size = 0
+                for file_path in path_obj.rglob('*'):
+                    if file_path.is_file():
+                        try:
+                            size += file_path.stat().st_size
+                        except (PermissionError, FileNotFoundError, OSError):
+                            # Skip files that can't be accessed
+                            continue
+                return size
+            else:
+                # Handle special files (symlinks, devices, etc.)
+                return path_obj.stat().st_size
+        
+        except PermissionError:
+            raise PermissionError(f"Permission denied accessing: {path_obj}")
+        except OSError as e:
+            raise OSError(f"Error accessing path {path_obj}: {e}")
+
     @staticmethod
     def get_size_from_path(path: Union[str, Path]) -> 'Storage':
         """
@@ -1330,34 +1479,8 @@ class Storage:
             >>> print(dir_size.auto_scale())
             15.2 MIB
         """
-        path_obj = Path(path)
-        
-        if not path_obj.exists():
-            raise FileNotFoundError(f"Path does not exist: {path}")
-        
-        try:
-            if path_obj.is_file():
-                # For files, get the file size directly
-                size = path_obj.stat().st_size
-            elif path_obj.is_dir():
-                # For directories, sum all file sizes recursively
-                size = 0
-                for file_path in path_obj.rglob('*'):
-                    if file_path.is_file():
-                        try:
-                            size += file_path.stat().st_size
-                        except (PermissionError, FileNotFoundError, OSError):
-                            # Skip files that can't be accessed
-                            continue
-            else:
-                # Handle special files (symlinks, devices, etc.)
-                size = path_obj.stat().st_size
-        
-        except PermissionError:
-            raise PermissionError(f"Permission denied accessing: {path}")
-        except OSError as e:
-            raise OSError(f"Error accessing path {path}: {e}")
-        
+        path_obj = Storage._validate_path(path)
+        size = Storage._calculate_file_size(path_obj)
         return Storage.parse_from_bytes(size)
 
     @staticmethod
@@ -1415,10 +1538,18 @@ class Storage:
             1.5 KIB
         """
         bytes_value = self.convert_to_bytes()
-        
+
         if bytes_value == 0:
             return Storage(0, StorageUnit.BYTES)
-        
+
+        # Find the most appropriate unit
+        target_unit = self._find_optimal_unit(bytes_value, prefer_binary)
+
+        # Convert to the chosen unit
+        return self.convert_to(target_unit)
+
+    def _find_optimal_unit(self, bytes_value: Decimal, prefer_binary: bool) -> StorageUnit:
+        """Find the optimal unit for displaying the given byte value."""
         # Choose unit set based on preference
         if prefer_binary:
             units = [
@@ -1430,13 +1561,10 @@ class Storage:
                 StorageUnit.BYTES, StorageUnit.KB, StorageUnit.MB, StorageUnit.GB,
                 StorageUnit.TB, StorageUnit.PB, StorageUnit.EB, StorageUnit.ZB, StorageUnit.YB
             ]
-        
+
         # Find the most appropriate unit
         for i, unit in enumerate(units[:-1]):
             if bytes_value < units[i + 1].value:
-                break
-        else:
-            unit = units[-1]  # Use the largest unit if value is very large
-        
-        # Convert to the chosen unit
-        return self.convert_to(unit)
+                return unit
+
+        return units[-1]  # Use the largest unit if value is very large
